@@ -3,10 +3,20 @@
   "version": "0.2.0",
   "scripts": {
     "build": "rollup -c",
-    "build:watch": "rollup -c -w"
+    "build:watch": "rollup -c -w",
+    "dist:clean": "rm -rf dist && mkdir -p dist/run-in-terminal",
+    "dist:copy": "rsync -av --exclude '.git' --exclude 'node_modules' --exclude 'logs' --exclude '*.map' --exclude 'native-host' --exclude '*.entry.*' icons pages src manifest.json package.json package-lock.json dist/run-in-terminal/",
+    "pack:chrome": "cd dist/run-in-terminal && zip -r ../run-in-terminal-chrome-v0.2.0.zip .",
+    "pack:firefox": "cd dist/run-in-terminal && zip -r ../run-in-terminal-firefox-v0.2.0.xpi .",
+    "release": "npm run dist:clean && npm run build && npm run dist:copy && npm run pack:chrome && npm run pack:firefox",
+    
+    "sign:firefox": "web-ext sign -s dist/run-in-terminal -a dist/signed --id run-in-terminal@tada.com --channel listed --api-key $AMO_JWT_ISSUER --api-secret $AMO_JWT_SECRET",
+    "sign:firefox:unlisted": "web-ext sign -s dist/run-in-terminal -a dist/signed --channel unlisted --api-key $AMO_JWT_ISSUER --api-secret $AMO_JWT_SECRET",
+
+    "sign:chrome": "webstore upload --source dist/run-in-terminal-chrome-v$npm_package_version.zip --extension-id $CWS_EXTENSION_ID --client-id $CWS_CLIENT_ID --client-secret $CWS_CLIENT_SECRET --refresh-token $CWS_REFRESH_TOKEN --auto-publish"
   },
   "keywords": [],
-  "author": "",
+  "author": "TadaEXE",
   "license": "MIT",
   "description": "",
   "devDependencies": {
@@ -15,6 +25,7 @@
     "@types/chrome": "^0.1.1",
     "rollup": "^4.52.3",
     "rollup-plugin-postcss": "^4.0.2",
+    "web-ext": "^8.10.0",
     "webextension-polyfill": "^0.12.0"
   },
   "dependencies": {

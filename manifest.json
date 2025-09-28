@@ -17,10 +17,8 @@
     "storage",
     "nativeMessaging",
     "tabs",
-    "downloads"
-  ],
-  "host_permissions": [
-    "<all_urls>"
+    "downloads",
+    "scripting"
   ],
   "action": {
     "default_title": "Run in Terminal",
