@@ -434,6 +434,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     return true;
   }
 
+  if (msg.type === "mirror.session.terminateHost" && typeof msg.tabId === "number") {
+    const p = termPorts.get(msg.tabId);
+    if (p) { try { p.postMessage({ type: "rit.host.close" }); } catch { } }
+    sendResponse({ ok: true });
+    return true;
+  }
+
   if (msg.type === "mirror.session.rename" && typeof msg.tabId === "number") {
     (async () => {
       const tabId = msg.tabId;
@@ -460,6 +467,44 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
           try { m.postMessage({ type: "mirror.reset" }); } catch { }
         }
       }
+
+      await broadcastSessionsUpdate();
+      sendResponse({ ok: true });
+    })();
+    return true;
+  }
+
+  if (msg.type === "mirror.session.view" && typeof msg.tabId === "number") {
+    (async () => {
+      try {
+        await focusTab(msg.tabId);
+        sendResponse({ ok: true });
+      } catch (e) {
+        sendResponse({ ok: false, error: String(e) });
+      }
+    })();
+    return true;
+  }
+
+  if (msg.type === "mirror.confirm.close" && typeof msg.tabId === "number") {
+    (async () => {
+      const p = termPorts.get(msg.tabId);
+      if (p) {
+        try { p.postMessage({ type: "mirror.confirm.close" }); } catch { }
+        sendResponse({ ok: true });
+      } else {
+        sendResponse({ ok: false, error: "Session not found" });
+      }
+    })();
+    return true;
+  }
+
+  if (msg.type === "mirror.session.close" && typeof msg.tabId === "number") {
+    (async () => {
+      try {
+        await focusTab(msg.tabId);
+        await chrome.tabs.remove(msg.tabId);
+      } catch { }
 
       await broadcastSessionsUpdate();
       sendResponse({ ok: true });

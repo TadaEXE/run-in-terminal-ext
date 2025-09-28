@@ -1,10 +1,12 @@
 <!doctype html>
 <html>
+
 <head>
   <meta charset="utf-8" />
   <title>Run in Terminal – Options</title>
   <link rel="stylesheet" href="styles/options.css" />
 </head>
+
 <body>
   <main>
     <h1>Run in Terminal – Options</h1>
@@ -12,7 +14,8 @@
     <section>
       <label for="shellOverride"><strong>Shell override</strong> (optional)</label>
       <p class="hint">
-        Empty = default shell (bash on Linux/macOS, PowerShell on Windows). Example: <code>/bin/zsh</code> or <code>cmd.exe</code>.
+        Empty = default shell (bash on Linux/macOS, PowerShell on Windows). Example: <code>/bin/zsh</code> or
+        <code>cmd.exe</code>.
       </p>
       <input id="shellOverride" type="text" placeholder="/bin/zsh" />
     </section>
@@ -23,6 +26,13 @@
       <label style="display:flex;gap:8px;align-items:center;margin-top:8px;">
         <input id="confirmOnDanger" type="checkbox" />
         Prompt for confirmation if detected
+      </label>
+    </section>
+
+    <section>
+      <label class="opt">
+        <input type="checkbox" id="warn-close" />
+        Ask before closing terminal tab while session is running.
       </label>
     </section>
 
@@ -48,5 +58,5 @@
   <!-- Installer generators + ping (separate, to declutter) -->
   <script type="module" src="../src/installers.js"></script>
 </body>
-</html>
 
+</html>

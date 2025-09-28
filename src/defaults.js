@@ -15,6 +15,7 @@ export const DEFAULTS = {
     "poweroff",
     "halt"
   ],
-  confirmOnDanger: true
+  confirmOnDanger: true,
+  confirmBeforeClose: true
 };
 

@@ -1,5 +1,7 @@
 // Popup page controller
 // Purpose -> session dropdown, naming UI, iframe focus, and mirror selection
+//
+import { DEFAULTS } from "./defaults.js"
 
 const openSettingsBtn = document.getElementById("open-settings");
 openSettingsBtn?.addEventListener("click", () => chrome.runtime.openOptionsPage());
@@ -100,6 +102,7 @@ saveBtn?.addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "mirror.session.rename", tabId, name }, () => {
     // background will broadcast an updated sessions list
   });
+  focusTerminalIframe();
 });
 
 // Also save on Enter key inside the input
@@ -110,7 +113,7 @@ nameInput.addEventListener("keydown", (e) => {
   }
 });
 
-// Optional -> create a terminal tab in background, then refresh list and select it
+// create a terminal tab in background, then refresh list and select it
 document.getElementById("new-session")?.addEventListener("click", () => {
   chrome.runtime.sendMessage({ type: "mirror.session.createBackground" }, (resp) => {
     loadSessions();
@@ -127,6 +130,65 @@ document.getElementById("new-session")?.addEventListener("click", () => {
     } else {
       focusTerminalIframe();
     }
+  });
+});
+
+// Close the currently selected terminal session (tab)
+document.getElementById("close-session")?.addEventListener("click", async () => {
+  const tabId = Number(select.value);
+  if (Number.isNaN(tabId)) return;
+
+  function doConfirmation(tabId) {
+    return new Promise((resolve, reject) => {
+
+      chrome.storage.sync.get(DEFAULTS, (cfgRaw) => {
+        const cfg = { ...DEFAULTS, ...cfgRaw };
+        if (!Boolean(cfg.confirmBeforeClose) || confirm("Do you really want to close this session?")) {
+          chrome.runtime.sendMessage({ type: "mirror.confirm.close", tabId: tabId }, (response) => {
+            if (response.ok) {
+              resolve(response);
+            } else {
+              reject(response);
+            }
+          });
+        } else {
+          reject();
+        }
+      });
+    });
+  }
+
+  try { await doConfirmation(tabId); } catch { return; }
+
+  chrome.runtime.sendMessage({ type: "mirror.session.close", tabId }, (_resp) => {
+    // refresh the list after closing
+    loadSessions();
+
+    // if nothing left, clear the mirror iframe view
+    setTimeout(() => {
+      if (!select.options.length) {
+        try {
+          frame?.contentWindow?.postMessage({ type: "rit.clear" }, "*");
+        } catch { }
+      } else {
+        // choose first remaining session and mirror it
+        select.selectedIndex = 0;
+        const firstId = Number(select.value);
+        if (!Number.isNaN(firstId)) {
+          sendSelectionToIframe(firstId);
+          focusTerminalIframe();
+        }
+      }
+    }, 100);
+  });
+});
+
+// View -> focus the selected terminal and close popup
+document.getElementById("view-session")?.addEventListener("click", () => {
+  const tabId = Number(select.value);
+  if (Number.isNaN(tabId)) { try { window.close(); } catch { } return; }
+  chrome.runtime.sendMessage({ type: "mirror.session.view", tabId }, () => {
+    try { window.close(); } catch { }
   });
 });
 

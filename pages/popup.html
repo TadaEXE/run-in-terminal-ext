@@ -10,27 +10,31 @@
 <body>
   <header>
     <img class="icon" src="../icons/term-32.png" alt="" />
-    <div class="title">Run in Terminal</div>
     <div class="grow"></div>
 
     <label class="session-label">
       <span>Session</span>
       <select id="session-select"></select>
     </label>
+    <button id="new-session" title="Open a new terminal tab">New</button>
+    <button id="close-session" title="Close selected terminal session">Close</button>
+    <button id="view-session" title="Switch to selected terminal tab">View</button>
+  </header>
 
+  <div class="embed-wrap">
+    <iframe id="terminal-frame" title="Embedded terminal" src="terminal.html?mirror=1" tabindex="0"></iframe>
+  </div>
+
+  <footer>
     <label class="name-label">
       <span>Name</span>
       <input id="session-name" type="text" placeholder="optional name" />
       <button id="save-name" title="Save name">Save</button>
     </label>
 
-    <button id="new-session">New</button>
-    <button id="open-settings">Settings</button>
-  </header>
-
-  <div class="embed-wrap">
-    <iframe id="terminal-frame" title="Embedded terminal" src="terminal.html?mirror=1" tabindex="0"></iframe>
-  </div>
+    <div class="grow"></div>
+    <button id="open-settings" title="Open settings">Settings</button>
+  </footer>
 
   <script type="module" src="../src/popup.js"></script>
 </body>

@@ -58,6 +58,16 @@ if (isMirror) {
       term.focus();
       return;
     }
+
+    if (data.type)
+
+      if (data.type === "rit.clear") {
+        selectedTabId = null;
+        term.reset();
+        fit.fit();
+        lastReqId = null;
+        return;
+      }
   });
 
   mirrorPort.onMessage.addListener((msg) => {
@@ -114,6 +124,10 @@ if (isMirror) {
   const pendingInput = [];
   let readyFlushTimer = null;
 
+  let warnOnClose = false;
+  let userInteracted = false;
+  let externalCloseConfirm = false;
+
   function openPty() {
     if (ptyOpened) return;
     ptyOpened = true;
@@ -137,6 +151,13 @@ if (isMirror) {
     }
   }
 
+  function updateCloseProtection() {
+    chrome.storage.sync.get(DEFAULTS, (cfgRaw) => {
+      const cfg = { ...DEFAULTS, ...cfgRaw };
+      warnOnClose = !!cfg.confirmBeforeClose && ptyReady;
+    });
+  }
+
   hostPort.onMessage.addListener((msg) => {
     if (msg?.type === "data" && msg.data_b64) {
       term.write(atob(msg.data_b64));
@@ -148,12 +169,14 @@ if (isMirror) {
       hostPort.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
       if (readyFlushTimer) clearTimeout(readyFlushTimer);
       readyFlushTimer = setTimeout(flushPending, 200);
+      updateCloseProtection();
       bgPort.postMessage({ type: "mirror.state", state: "ready" });
       return;
     }
     if (msg?.type === "exit") {
       ptyReady = false;
       ptyOpened = false;
+      warnOnClose = false;
       term.writeln("\r\n[process exited]");
       bgPort.postMessage({ type: "mirror.state", state: "exit" });
       return;
@@ -185,6 +208,10 @@ if (isMirror) {
       else pendingInput.push(msg.text);
       return;
     }
+    if (msg?.type === "rit.host.close") {
+      try { hostPort.postMessage({ type: "close" }); } catch { }
+      return;
+    }
     if (msg?.type === "mirror.snapshot.request" && msg.reqId) {
       try {
         const dump = serialize.serialize();
@@ -192,6 +219,10 @@ if (isMirror) {
       } catch (e) {
         bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, error: String(e) });
       }
+      return;
+    }
+    if (msg?.type === "mirror.confirm.close") {
+      externalCloseConfirm = true;
       return;
     }
     // set session name -> update tab title for easier identification
@@ -211,12 +242,34 @@ if (isMirror) {
     hostPort.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
   }).observe(root);
 
-  // optional cleanup on unload -> ask host to close
-  window.addEventListener("pagehide", () => {
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area == "sync" && changes.confirmBeforeClose) {
+      updateCloseProtection();
+    }
+  });
+
+  window.addEventListener("unload", () => {
+    console.log("Closing connecting with host");
     try { hostPort.postMessage({ type: "close" }); } catch { }
     try { hostPort.disconnect(); } catch { }
-  }, { once: true });
+  });
+
+  window.addEventListener("beforeunload", (e) => {
+    if (externalCloseConfirm) {
+      console.log("instantly closing due to external confirmation.");
+    } else {
+      console.log("warnOnClose", warnOnClose, "userInteracted", userInteracted);
+      if (warnOnClose && userInteracted) e.preventDefault();
+
+    }
+  });
+
+  // make sure preventDefault in beforeunload fires
+  root.addEventListener("mousedown", () => { userInteracted = true }, { once: true });
+  window.addEventListener("keydown", () => { userInteracted = true }, { once: true });
+  window.addEventListener("touchstart", () => { userInteracted = true }, { once: true });
 
   openPty();
+  updateCloseProtection();
 }
 

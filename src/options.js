@@ -9,6 +9,7 @@ const els = {
   genLinux: document.getElementById("gen-linux"),
   genWin: document.getElementById("gen-win"),
   ping: document.getElementById("ping-host"),
+  warnClose: document.getElementById("warn-close"),
 };
 
 async function load() {
@@ -17,6 +18,7 @@ async function load() {
   els.shellOverride.value = cfg.shellOverride || "";
   els.dangerousSubstrings.value = (cfg.dangerousSubstrings || []).join("\n");
   els.confirmOnDanger.checked = !!cfg.confirmOnDanger;
+  els.warnClose.checked = !!cfg.confirmBeforeClose;
 }
 
 async function save() {
@@ -28,7 +30,8 @@ async function save() {
   await chrome.storage.sync.set({
     shellOverride: els.shellOverride.value.trim(),
     dangerousSubstrings: dangerous,
-    confirmOnDanger: !!els.confirmOnDanger.checked
+    confirmOnDanger: !!els.confirmOnDanger.checked,
+    confirmBeforeClose: !!els.warnClose.checked
   });
 
   els.status.textContent = "Saved!";

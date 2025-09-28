@@ -6,10 +6,21 @@
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  width: 720px;
+  padding: 0;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+
+  width: clamp(560px, 95vw, 800px);
+  height: clamp(460px, 95vh, 600px);
+
   font: 13px/1.4 system-ui, Segoe UI, Roboto, Ubuntu, sans-serif;
+  overflow: hidden;
 }
 
 header {
@@ -17,6 +28,11 @@ header {
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
+  flex-wrap: wrap;
+}
+
+header>* {
+  min-width: 0;
 }
 
 .icon {
@@ -37,32 +53,57 @@ header {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-right: 8px;
 }
 
 #session-select {
-  max-width: 240px;
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 260px;
 }
 
 #session-name {
-  width: 180px;
+  flex: 1 1 160px;
+  min-width: 140px;
+  max-width: 240px;
+}
+
+#view-session {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, CanvasText 20%, transparent);
+  background: transparent;
+}
+
+#close-session {
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, CanvasText 20%, transparent);
+  background: transparent;
 }
 
 button {
   padding: 6px 12px;
   border: none;
-  border-radius: 999px;
+  border-radius: 1px;
   cursor: pointer;
   font-weight: 600;
 }
 
 .embed-wrap {
-  border-top: 1px solid color-mix(in oklab, CanvasText 20%, transparent);
+  flex: 1;
+  padding: 8px 10px;
+  display: flex;
+  min-height: 260px;
 }
 
 #terminal-frame {
   width: 100%;
-  height: 440px;
+  height: 100%;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, CanvasText 20%, transparent);
+}
+
+footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-top: 1px solid color-mix(in oklab, CanvasText 20%, transparent);
 }
