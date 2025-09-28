@@ -1,0 +1,8 @@
+{
+  "name": "com.tada.run_in_terminal",
+  "description": "Run in Terminal native host",
+  "path": "/home/tada/Projects/run-in-terminal-ext/native-host/run_in_terminal.py",
+  "type": "stdio",
+  "allowed_extensions": [ "run-in-terminal@tada.com" ]
+}
+

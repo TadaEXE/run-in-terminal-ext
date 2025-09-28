@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Run in Terminal – Options</title>
+  <link rel="stylesheet" href="styles/options.css" />
+</head>
+<body>
+  <main>
+    <h1>Run in Terminal – Options</h1>
+
+    <section>
+      <label for="shellOverride"><strong>Shell override</strong> (optional)</label>
+      <p class="hint">
+        Empty = default shell (bash on Linux/macOS, PowerShell on Windows). Example: <code>/bin/zsh</code> or <code>cmd.exe</code>.
+      </p>
+      <input id="shellOverride" type="text" placeholder="/bin/zsh" />
+    </section>
+
+    <section>
+      <label for="dangerousSubstrings"><strong>Dangerous substrings (one per line)</strong></label>
+      <textarea id="dangerousSubstrings" rows="8" spellcheck="false"></textarea>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+        <input id="confirmOnDanger" type="checkbox" />
+        Prompt for confirmation if detected
+      </label>
+    </section>
+
+    <section>
+      <h2>Native host</h2>
+      <p>Generate a platform-specific installer to set up the native host.</p>
+      <div class="row">
+        <button id="gen-linux">Generate Linux/macOS installer (.sh)</button>
+        <button id="gen-win">Generate Windows installer (.ps1)</button>
+        <button id="ping-host">Ping host</button>
+      </div>
+      <p class="hint">Run the downloaded script, then reload the extension.</p>
+    </section>
+
+    <footer>
+      <button id="save">Save</button>
+      <span id="status" role="status" aria-live="polite"></span>
+    </footer>
+  </main>
+
+  <!-- Settings logic only -->
+  <script type="module" src="../src/options.js"></script>
+  <!-- Installer generators + ping (separate, to declutter) -->
+  <script type="module" src="../src/installers.js"></script>
+</body>
+</html>
+

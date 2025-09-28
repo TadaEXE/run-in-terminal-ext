@@ -1,0 +1,30 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Confirm risky command</title>
+  <link rel="stylesheet" href="styles/confirm.css" />
+</head>
+
+<body>
+  <main>
+    <h1>⚠️ Confirm risky command</h1>
+    <p>Your selection matches one or more dangerous substrings.</p>
+    <section>
+      <h2>Matched substrings</h2>
+      <ul id="matches"></ul>
+    </section>
+    <section>
+      <h2>Selection</h2>
+      <pre id="snippet"></pre>
+    </section>
+    <footer>
+      <button id="cancel">Cancel</button>
+      <button id="proceed">Proceed anyway</button>
+    </footer>
+  </main>
+  <script type="module" src="../src/confirm.js"></script>
+</body>
+
+</html>

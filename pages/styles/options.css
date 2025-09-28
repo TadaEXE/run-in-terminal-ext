@@ -1,0 +1,147 @@
+:root {
+  color-scheme: light dark;
+  --pad: 16px;
+  --gap: 12px;
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+body {
+  font: 14px/1.4 system-ui, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+  margin: 0;
+  padding: var(--pad);
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--gap);
+}
+
+h1 {
+  margin: 0 0 8px;
+}
+
+section {
+  display: grid;
+  gap: 8px;
+  background: color-mix(in oklab, Canvas 92%, Highlight 8%);
+  padding: var(--pad);
+  border-radius: var(--radius);
+}
+
+label {
+  font-weight: 600;
+}
+
+textarea,
+input[type="text"] {
+  font-family: var(--mono);
+  font-size: 13px;
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in oklab, CanvasText 20%, Transparent);
+  background: Canvas;
+  color: CanvasText;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  background: color-mix(in oklab, Highlight 60%, Canvas 40%);
+  color: white;
+  font-weight: 600;
+}
+
+#status {
+  opacity: .8;
+}
+
+.hint {
+  opacity: .8;
+  margin: 0;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+.section,
+.card,
+.panel {
+  overflow: hidden;
+}
+
+form input[type="text"],
+form input[type="search"],
+form input[type="url"],
+form input[type="email"],
+form input[type="number"],
+form select,
+form textarea {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+
+form textarea {
+  min-height: 12rem;
+  resize: vertical;
+  min-width: 100%;
+  overflow: auto;
+  line-height: 1.35;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+.form-row,
+.field,
+.field-body {
+  min-width: 0;
+}
+
+#dangerousSubstrings {
+  overflow: auto;
+  resize: vertical !important;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@supports (resize: block) {
+  #dangerousSubstrings {
+    resize: block !important;
+  }
+}
+
+.field,
+.form-row,
+.section {
+  min-width: 0;
+}
+
+.section,
+.card,
+.panel {
+  overflow: hidden;
+}

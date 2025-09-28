@@ -1,0 +1,59 @@
+:root {
+  color-scheme: light dark;
+  --pad: 16px;
+  --gap: 12px;
+  --radius: 10px;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+body {
+  font: 14px/1.4 system-ui, Segoe UI, Roboto, Ubuntu, Cantarell, "Noto Sans", sans-serif;
+  margin: 0;
+  padding: var(--pad);
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  gap: var(--gap);
+}
+
+section {
+  background: color-mix(in oklab, Canvas 92%, Highlight 8%);
+  padding: var(--pad);
+  border-radius: var(--radius);
+}
+
+pre {
+  font-family: var(--mono);
+  white-space: pre-wrap;
+  background: Canvas;
+  color: CanvasText;
+  border: 1px solid color-mix(in oklab, CanvasText 20%, Transparent);
+  padding: 10px;
+  border-radius: 8px;
+}
+
+footer {
+  display: flex;
+  gap: 12px;
+}
+
+button {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+#cancel {
+  background: color-mix(in oklab, gray 50%, Canvas 50%);
+  color: CanvasText;
+}
+
+#proceed {
+  background: color-mix(in oklab, #d22 65%, Canvas 35%);
+  color: white;
+  font-weight: 700;
+}

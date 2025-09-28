@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>Run in Terminal</title>
+  <link rel="stylesheet" href="styles/popup.css" />
+</head>
+
+<body>
+  <header>
+    <img class="icon" src="../icons/term-32.png" alt="" />
+    <div class="title">Run in Terminal</div>
+  </header>
+
+  <div class="controls">
+    <button id="open-settings">Open settings</button>
+  </div>
+
+  <div class="embed-wrap">
+    <iframe id="terminal-frame" title="Embedded terminal" src="terminal.html?mirror=1" tabindex="0">
+    </iframe>
+  </div>
+
+  <script type="module" src="../src/popup.js"></script>
+</body>
+
+</html>
