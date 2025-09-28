@@ -1,247 +1,240 @@
-import { HOST_NAME } from "./defaults.js";
+// Minimal installers + ping hooked to your existing buttons
+// Stays close to your options.html layout and simple options.js
 
-function downloadText(filename, mime, text) {
-  const url = URL.createObjectURL(new Blob([text], { type: mime }));
-  chrome.downloads.download({ url, filename, saveAs: true }, () => {
-    URL.revokeObjectURL(url);
-  });
+import { DEFAULTS } from "./defaults.js";
+
+// Constants derived from manifest/runtime
+const MANIFEST = chrome.runtime.getManifest();
+const HOST_NAME = DEFAULTS.nativeHostName || "com.tada.run_in_terminal";
+const GECKO_ID =
+  (MANIFEST.browser_specific_settings &&
+    MANIFEST.browser_specific_settings.gecko &&
+    MANIFEST.browser_specific_settings.gecko.id) ||
+  "run-in-terminal@tada.com";
+const CHROME_ORIGIN = `chrome-extension://${chrome.runtime.id}/`;
+
+// Default host script path used inside generated installers
+// -> edit these in the generated file if your path differs
+const LINUX_MAC_HOST_PATH =
+  "/home/tada/Projects/run-in-terminal-ext/native-host/run_in_terminal.py";
+const WIN_HOST_PATH = `%USERPROFILE%\\run-in-terminal\\native-host\\run_in_terminal.py`;
+
+// ---- JSON builders (the JSON gets embedded into the scripts via heredoc / here-string) ----
+function buildFirefoxHostJson(hostPath) {
+  const obj = {
+    name: HOST_NAME,
+    description: "Run in Terminal native host",
+    path: hostPath,
+    type: "stdio",
+    allowed_extensions: [GECKO_ID],
+  };
+  return JSON.stringify(obj, null, 2);
 }
 
-// Small, cross-platform native host (PTY on Linux/macOS, pywinpty on Windows, pipe fallback otherwise)
-const PY_HOST = `#!/usr/bin/env python3
-import os, sys, json, struct, threading, base64, subprocess
-IS_WIN = (sys.platform == "win32")
-def rmsg():
-    h=sys.stdin.buffer.read(4)
-    if not h: return None
-    n=int.from_bytes(h,"little")
-    return json.loads(sys.stdin.buffer.read(n).decode("utf-8"))
-def wmsg(o):
-    b=json.dumps(o).encode("utf-8")
-    sys.stdout.buffer.write(len(b).to_bytes(4,"little"))
-    sys.stdout.buffer.write(b); sys.stdout.buffer.flush()
-def wdata(bs): wmsg({"type":"data","data_b64":base64.b64encode(bs).decode("ascii")})
-class PTY:
-    def __init__(s, shell=None, cols=80, rows=24):
-        s.shell=shell; s.cols=cols; s.rows=rows
-        s.proc=None; s.m=None; s.sl=None; s.t=None
-        s.winpty=None; s.winproc=None
-    def spawn(s):
-        if not s.shell:
-            s.shell=(os.environ.get("COMSPEC") or "powershell.exe") if IS_WIN else (os.environ.get("SHELL") or "/bin/bash")
-        if IS_WIN:
-            try:
-                import pywinpty
-                s.winpty=pywinpty.PTY(cols=s.cols, rows=s.rows)
-                s.winproc=pywinpty.Process(s.winpty, s.shell)
-                s.t=threading.Thread(target=s._rwin, daemon=True); s.t.start()
-                wmsg({"type":"ready","platform":"win-pty","shell":s.shell}); return
-            except Exception:
-                s.proc=subprocess.Popen([s.shell], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                s.t=threading.Thread(target=s._rpipe, daemon=True); s.t.start()
-                wmsg({"type":"ready","platform":"win-pipe","shell":s.shell}); return
-        import pty, fcntl, termios, struct as st
-        s.m,s.sl=pty.openpty()
-        fcntl.ioctl(s.m, termios.TIOCSWINSZ, st.pack("HHHH", s.rows, s.cols, 0, 0))
-        s.proc=subprocess.Popen([s.shell,"-l"], stdin=s.sl, stdout=s.sl, stderr=s.sl, start_new_session=True)
-        os.close(s.sl)
-        s.t=threading.Thread(target=s._rposix, daemon=True); s.t.start()
-        wmsg({"type":"ready","platform":"posix-pty","shell":s.shell})
-    def write(s,b):
-        try:
-            if IS_WIN:
-                if s.winpty: s.winpty.write(b.decode("utf-8","ignore"))
-                elif s.proc and s.proc.stdin: s.proc.stdin.write(b); s.proc.stdin.flush()
-            else: os.write(s.m,b)
-        except Exception: pass
-    def resize(s,c,r):
-        s.cols=int(c); s.rows=int(r)
-        try:
-            if IS_WIN and s.winpty:
-                s.winpty.set_size(s.cols,s.rows)
-            else:
-                import fcntl, termios, struct as st
-                fcntl.ioctl(s.m, termios.TIOCSWINSZ, st.pack("HHHH", s.rows, s.cols, 0, 0))
-        except Exception: pass
-    def _rposix(s):
-        try:
-            while True:
-                ch=os.read(s.m,8192)
-                if not ch: break
-                wdata(ch)
-        except OSError: pass
-        wmsg({"type":"exit","code": s.proc.poll() if s.proc else None})
-    def _rpipe(s):
-        try:
-            while True:
-                b=s.proc.stdout.read(8192)
-                if not b: break
-                wdata(b)
-        except Exception: pass
-        wmsg({"type":"exit","code": s.proc.poll() if s.proc else None})
-    def _rwin(s):
-        try:
-            while True:
-                try:
-                    s_=s.winpty.read(8192)
-                    if not s_: break
-                    wdata(s_.encode("utf-8","ignore"))
-                except Exception: break
-        except Exception: pass
-        wmsg({"type":"exit","code":0})
-    def close(s):
-        try:
-            if IS_WIN:
-                if s.winproc: s.winproc.kill()
-                if s.proc: s.proc.terminate()
-            else:
-                if s.proc: s.proc.terminate()
-                if s.m: os.close(s.m)
-        except Exception: pass
-def main():
-    p=None
-    while True:
-        m=rmsg()
-        if m is None:
-            if p: p.close()
-            return
-        t=m.get("type")
-        if t=="open":
-            p=PTY(shell=m.get("shell"), cols=int(m.get("cols",100)), rows=int(m.get("rows",30))); p.spawn()
-        elif t=="stdin":
-            import base64; d=base64.b64decode(m.get("data_b64","")); p and p.write(d)
-        elif t=="resize":
-            p and p.resize(int(m.get("cols",100)), int(m.get("rows",30)))
-        elif t=="close":
-            if p: p.close(); p=None; wmsg({"type":"exit","code":0})
-        elif t=="ping":
-            wmsg({"type":"pong"})
-        else:
-            wmsg({"type":"error","message":f"unknown:{t}"})
-if __name__=="__main__": main()
-`;
-
-function handlePing() {
-  chrome.runtime.sendNativeMessage(HOST_NAME, { type: "ping" }, (resp) => {
-    alert(resp ? "OK: host reachable" : `Error: ${chrome.runtime.lastError?.message || "no response"}`);
-  });
+function buildChromeHostJson(hostPath) {
+  const obj = {
+    name: HOST_NAME,
+    description: "Run in Terminal native host",
+    path: hostPath,
+    type: "stdio",
+    allowed_origins: [CHROME_ORIGIN],
+  };
+  return JSON.stringify(obj, null, 2);
 }
 
-async function generateLinuxInstaller() {
-  const extId = chrome.runtime.id;
-  const mf = chrome.runtime.getManifest();
-  const geckoId = mf.browser_specific_settings?.gecko?.id || "{run-in-terminal@TadaEXE.com}";
+// ---- Linux/macOS .sh generator (installs for Firefox + Chrome, user scope) ----
+function makeLinuxMacInstallerSh(hostPath = LINUX_MAC_HOST_PATH) {
+  const ffJson = buildFirefoxHostJson(hostPath);
+  const chJson = buildChromeHostJson(hostPath);
 
-  const sh = `#!/usr/bin/env bash
+  // Use $HOME in bash, not ${HOME} to avoid JS interpolation problems
+  return `#!/usr/bin/env bash
 set -euo pipefail
+
+# Run in Terminal native host installer (Linux/macOS, user scope)
+# Host path -> edit if needed:
+HOST_PATH="${hostPath}"
 HOST_NAME="${HOST_NAME}"
-EXT_ID="${extId}"
-GECKO_ID="${geckoId}"
-HOST_DIR="\\${HOME}/.local/share/run-in-terminal"
-HOST_PATH="\\${HOST_DIR}/run_in_terminal.py"
 
-echo "[*] Writing native host to \\${HOST_PATH}"
-mkdir -p "\\${HOST_DIR}"
-cat > "\\${HOST_PATH}" <<'PY'
-${PY_HOST}
-PY
-chmod +x "\\${HOST_PATH}"
+# Detect OS for directories
+OS="$(uname -s || echo unknown)"
+if [[ "$OS" == "Darwin" ]]; then
+  FF_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts"
+  CH_DIR="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+else
+  FF_DIR="$HOME/.mozilla/native-messaging-hosts"
+  CH_DIR="$HOME/.config/google-chrome/NativeMessagingHosts"
+fi
 
-write_manifest_chromium() {
-  local base="$1"
-  local dir="\\${base}/NativeMessagingHosts"
-  mkdir -p "\\${dir}"
-  cat > "\\${dir}/\\${HOST_NAME}.json" <<JSON
-{
-  "name": "${HOST_NAME}",
-  "description": "Run in Terminal native host",
-  "path": "\\${HOST_PATH}",
-  "type": "stdio",
-  "allowed_origins": ["chrome-extension://\\${EXT_ID}/"]
-}
+FF_JSON="$FF_DIR/${HOST_NAME}.json"
+CH_JSON="$CH_DIR/${HOST_NAME}.json"
+
+echo "Installing native host..."
+echo "  Host path: $HOST_PATH"
+echo "  Firefox json -> $FF_JSON"
+echo "  Chrome  json -> $CH_JSON"
+
+mkdir -p "$FF_DIR" "$CH_DIR"
+
+# Write Firefox JSON
+cat > "$FF_JSON" <<'JSON'
+${ffJson}
 JSON
-  echo "  - wrote \\${dir}/\\${HOST_NAME}.json"
-}
 
-write_manifest_firefox() {
-  local base="$1"
-  local dir="\\${base}/native-messaging-hosts"
-  mkdir -p "\\${dir}"
-  cat > "\\${dir}/\\${HOST_NAME}.json" <<JSON
-{
-  "name": "${HOST_NAME}",
-  "description": "Run in Terminal native host",
-  "path": "\\${HOST_PATH}",
-  "type": "stdio",
-  "allowed_extensions": ["\\${GECKO_ID}"]
-}
+# Write Chrome JSON
+cat > "$CH_JSON" <<'JSON'
+${chJson}
 JSON
-  echo "  - wrote \\${dir}/\\${HOST_NAME}.json"
-}
 
-echo "[*] Installing manifests (best-effort)"
-[ -d "\\${HOME}/.config/chromium" ] && write_manifest_chromium "\\${HOME}/.config/chromium"
-[ -d "\\${HOME}/.config/google-chrome" ] && write_manifest_chromium "\\${HOME}/.config/google-chrome"
-[ -d "\\${HOME}/.var/app/org.chromium.Chromium/config/chromium" ] && write_manifest_chromium "\\${HOME}/.var/app/org.chromium.Chromium/config/chromium"
-[ -d "\\${HOME}/.var/app/com.google.Chrome/config/google-chrome" ] && write_manifest_chromium "\\${HOME}/.var/app/com.google.Chrome/config/google-chrome"
+chmod 644 "$FF_JSON" "$CH_JSON" || true
 
-write_manifest_firefox "\\${HOME}/.mozilla"
-[ -d "\\${HOME}/.var/app/org.mozilla.firefox/.mozilla" ] && write_manifest_firefox "\\${HOME}/.var/app/org.mozilla.firefox/.mozilla"
+# Make sure host script is executable (best effort)
+if [[ -f "$HOST_PATH" ]]; then
+  chmod +x "$HOST_PATH" || true
+fi
 
-echo "[*] Done. Reload the extension and try Ping."
+echo
+echo "Done."
+echo "Notes:"
+echo " - For Chromium, copy $CH_JSON to $HOME/.config/chromium/NativeMessagingHosts/${HOST_NAME}.json"
+echo " - Restart the browser(s) after installing."
 `;
-
-  downloadText("install-native-host.sh", "application/x-sh", sh);
 }
 
-async function generateWindowsInstaller() {
-  const extId = chrome.runtime.id;
-  const mf = chrome.runtime.getManifest();
-  const geckoId = mf.browser_specific_settings?.gecko?.id || "{run-in-terminal@example.com}";
+// ---- Windows PowerShell generator (installs for Firefox + Chrome, HKCU) ----
+function makeWindowsInstallerPs1(hostPathWin = WIN_HOST_PATH) {
+  const ffJson = buildFirefoxHostJson(hostPathWin);
+  const chJson = buildChromeHostJson(hostPathWin);
 
-  const ps1 = `#Requires -Version 5
+  // Escape backticks for PowerShell here-strings
+  const ffEsc = ffJson.replace(/`/g, "``");
+  const chEsc = chJson.replace(/`/g, "``");
+
+  return `# Run in Terminal native host installer (Windows, HKCU)
 $ErrorActionPreference = "Stop"
-$HostName = "${HOST_NAME}"
-$Base = "$env:LOCALAPPDATA\\RunInTerminal"
-$HostPath = Join-Path $Base "run_in_terminal.py"
-$ExtId = "${extId}"
 
-New-Item -Force -ItemType Directory -Path $Base | Out-Null
+$HostPath = "${hostPathWin}"
+$Base = Join-Path $env:LOCALAPPDATA "RunInTerminal"
+New-Item -ItemType Directory -Force -Path $Base | Out-Null
+
+$FirefoxJson = Join-Path $Base "${HOST_NAME}.firefox.json"
+$ChromeJson  = Join-Path $Base "${HOST_NAME}.chrome.json"
+
+# Write Firefox JSON
 @'
-${PY_HOST}
-'@ | Set-Content -NoNewline -Encoding UTF8 -Path $HostPath
+${ffEsc}
+'@ | Set-Content -Path $FirefoxJson -Encoding UTF8 -NoNewline
 
-$NMChrome   = Join-Path $env:LOCALAPPDATA "Google\\Chrome\\User Data\\NativeMessagingHosts"
-$NMChromium = Join-Path $env:LOCALAPPDATA "Chromium\\User Data\\NativeMessagingHosts"
-$NMFirefox  = Join-Path $env:APPDATA      "Mozilla\\NativeMessagingHosts"
-New-Item -Force -ItemType Directory -Path $NMChrome, $NMChromium, $NMFirefox | Out-Null
+# Write Chrome JSON
+@'
+${chEsc}
+'@ | Set-Content -Path $ChromeJson -Encoding UTF8 -NoNewline
 
-$ManifestChrome = @{
-  name = $HostName
-  description = "Run in Terminal native host"
-  path = $HostPath
-  type = "stdio"
-  allowed_origins = @("chrome-extension://${extId}/")
-} | ConvertTo-Json -Compress
+# Registry mappings (user scope)
+New-Item -Path "HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\${HOST_NAME}" -Force | Out-Null
+Set-ItemProperty -Path "HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\${HOST_NAME}" -Name "(default)" -Value $FirefoxJson
 
-$ManifestChrome | Set-Content -Encoding UTF8 -Path (Join-Path $NMChrome   "$HostName.json")
-$ManifestChrome | Set-Content -Encoding UTF8 -Path (Join-Path $NMChromium "$HostName.json")
+New-Item -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}" -Force | Out-Null
+Set-ItemProperty -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}" -Name "(default)" -Value $ChromeJson
 
-'{
-  "name": "' + $HostName + '",
-  "description": "Run in Terminal native host",
-  "path": "' + $HostPath.Replace("\\","\\\\") + '",
-  "type": "stdio",
-  "allowed_extensions": ["${geckoId}"]
-}' | Set-Content -Encoding UTF8 -Path (Join-Path $NMFirefox "$HostName.json")
-
-Write-Host "Done. Reload the extension."
-`;
-
-  downloadText("install-native-host.ps1", "text/plain", ps1);
+# Make host script executable if it exists (PowerShell-friendly shells may not need this)
+if (Test-Path -Path $HostPath) {
+  try { icacls $HostPath /grant "*S-1-5-32-545:(RX)" | Out-Null } catch {}
 }
 
-document.getElementById("ping-host").addEventListener("click", handlePing);
-document.getElementById("gen-linux").addEventListener("click", generateLinuxInstaller);
-document.getElementById("gen-win").addEventListener("click", generateWindowsInstaller);
+Write-Host ""
+Write-Host "Installed:"
+Write-Host " - Firefox JSON -> $FirefoxJson"
+Write-Host " - Chrome  JSON -> $ChromeJson"
+Write-Host "Restart your browser(s)."
+`;
+}
+
+// ---- Download helpers ----
+async function downloadText(filename, mime, text) {
+  const blob = new Blob([text], { type: mime || "text/plain" });
+  const url = URL.createObjectURL(blob);
+  try {
+    await chrome.downloads.download({
+      url,
+      filename,
+      saveAs: true,
+      conflictAction: "overwrite",
+    });
+  } finally {
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+}
+
+// ---- Ping host ----
+function pingHost() {
+  const host = HOST_NAME;
+  let port;
+  try {
+    port = chrome.runtime.connectNative(host);
+  } catch (e) {
+    alert("Native host connect failed.\n\n" + String(e));
+    return;
+  }
+
+  let done = false;
+  const t = setTimeout(() => {
+    if (done) return;
+    done = true;
+    try { port.disconnect(); } catch { }
+    alert("Ping timeout. Is the native host installed?");
+  }, 3000);
+
+  port.onMessage.addListener((msg) => {
+    if (done) return;
+    done = true;
+    clearTimeout(t);
+    try { port.disconnect(); } catch { }
+    if (msg && msg.type === "pong") {
+      alert("Pong from native host.");
+    } else {
+      alert("Host responded.");
+    }
+  });
+
+  port.onDisconnect.addListener(() => {
+    if (done) return;
+    done = true;
+    clearTimeout(t);
+    const err = chrome.runtime.lastError?.message || "Disconnected.";
+    alert("Host disconnect: " + err);
+  });
+
+  try {
+    port.postMessage({ type: "ping" });
+  } catch (e) {
+    clearTimeout(t);
+    alert("Ping send failed.\n\n" + String(e));
+  }
+}
+
+// ---- Wire buttons on DOM ready ----
+document.addEventListener("DOMContentLoaded", () => {
+  const btnLinux = document.getElementById("gen-linux");
+  const btnWin = document.getElementById("gen-win");
+  const btnPing = document.getElementById("ping-host");
+
+  if (btnLinux) {
+    btnLinux.addEventListener("click", async () => {
+      const sh = makeLinuxMacInstallerSh(LINUX_MAC_HOST_PATH);
+      await downloadText("rit-install-linux-mac.sh", "text/x-sh", sh);
+    });
+  }
+
+  if (btnWin) {
+    btnWin.addEventListener("click", async () => {
+      const ps1 = makeWindowsInstallerPs1(WIN_HOST_PATH);
+      await downloadText("rit-install-windows.ps1", "text/plain", ps1);
+    });
+  }
+
+  if (btnPing) {
+    btnPing.addEventListener("click", pingHost);
+  }
+});
 

@@ -4,8 +4,6 @@
 import { DEFAULTS } from "./defaults.js"
 
 const openSettingsBtn = document.getElementById("open-settings");
-openSettingsBtn?.addEventListener("click", () => chrome.runtime.openOptionsPage());
-
 const frame = document.getElementById("terminal-frame");
 const select = document.getElementById("session-select");
 const nameInput = document.getElementById("session-name");
@@ -85,6 +83,10 @@ chrome.runtime.onMessage.addListener((msg) => {
   }
 });
 
+openSettingsBtn?.addEventListener("click", () => {
+  chrome.runtime.openOptionsPage();
+  try { window.close(); } catch { }
+});
 // Selection handler -> switch mirror, refresh name field, focus iframe
 select.addEventListener("change", () => {
   const tabId = Number(select.value);
