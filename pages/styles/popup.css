@@ -8,8 +8,8 @@
 
 body {
   margin: 0;
+  width: 720px;
   font: 13px/1.4 system-ui, Segoe UI, Roboto, Ubuntu, sans-serif;
-  width: 640px;
 }
 
 header {
@@ -20,16 +20,32 @@ header {
 }
 
 .icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .title {
   font-weight: 600;
 }
 
-.controls {
-  padding: 0 10px 8px;
+.grow {
+  flex: 1;
+}
+
+.session-label,
+.name-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 8px;
+}
+
+#session-select {
+  max-width: 240px;
+}
+
+#session-name {
+  width: 180px;
 }
 
 button {
@@ -42,12 +58,11 @@ button {
 
 .embed-wrap {
   border-top: 1px solid color-mix(in oklab, CanvasText 20%, transparent);
-  padding: 8px 0 10px;
 }
 
 #terminal-frame {
   width: 100%;
-  height: 420px;
+  height: 440px;
   border: none;
   border-radius: 6px;
 }

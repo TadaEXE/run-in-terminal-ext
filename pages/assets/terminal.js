@@ -119,8 +119,8 @@ const DEFAULTS = {
 };
 
 // Terminal page script
-// Normal mode -> owns the PTY and forwards data to background for mirrors
-// Mirror mode (?mirror=1) -> shows what the terminal tab renders and sends keystrokes back
+// Normal mode -> owns a PTY via native host and forwards output to background
+// Mirror mode (?mirror=1) -> mirrors a selected terminal tab and sends keystrokes back
 
 
 const term = new wl({
@@ -136,81 +136,94 @@ const root = document.getElementById("term");
 term.open(root);
 fit.fit();
 term.focus();
-
-window.addEventListener("message", (e) => {
-  const data = e && e.data;
-  if (data && data.type === "rit.focus") {
-    term.focus();
-  }
-});
 root.addEventListener("mousedown", () => term.focus());
 
-// Detect mirror mode
 const isMirror = new URLSearchParams(location.search).get("mirror") === "1";
 
 if (isMirror) {
-  // Mirror view in the popup -> no native host, only relay
+  // Mirror mode
   const mirrorPort = chrome.runtime.connect({ name: "rit-mirror" });
+  let selectedTabId = null;
+  let lastReqId = null;
 
-  // Request a one-time snapshot of the current buffer from the terminal tab
-  const reqId = String(Date.now()) + "-" + Math.random().toString(36).slice(2);
-  mirrorPort.postMessage({ type: "mirror.snapshot.request", reqId });
+  function requestSnapshot() {
+    if (selectedTabId == null) return;
+    lastReqId = "snap-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2);
+    mirrorPort.postMessage({ type: "mirror.snapshot.request", reqId: lastReqId, tabId: selectedTabId });
+  }
 
-  // Receive snapshot, then live updates and state changes
-  mirrorPort.onMessage.addListener((msg) => {
-    if (!msg) return;
+  window.addEventListener("message", (e) => {
+    const data = e && e.data;
+    if (!data) return;
 
-    // One-time snapshot -> write full dump, then continue with live data
-    if (msg.type === "mirror.snapshot" && msg.reqId === reqId) {
-      if (msg.error) {
-        term.writeln("\r\n[snapshot error] " + String(msg.error));
-      } else if (msg.data_b64) {
-        const dump = atob(msg.data_b64);
-        term.write(dump);
+    if (data.type === "rit.selectSession" && typeof data.tabId === "number") {
+      const isSwitch = selectedTabId !== null && selectedTabId !== data.tabId;
+      selectedTabId = data.tabId;
+      if (isSwitch) {
+        term.reset();
+        fit.fit();
+        lastReqId = null;
       }
+      mirrorPort.postMessage({ type: "mirror.select", tabId: selectedTabId });
+      requestSnapshot();
       return;
     }
 
-    // Live output from the terminal tab
-    if (msg.type === "mirror.data" && msg.data_b64) {
-      term.write(atob(msg.data_b64));
-      return;
-    }
-
-    // State changes from the terminal tab
-    if (msg.type === "mirror.state") {
-      if (msg.state === "ready") {
-        term.writeln("\x1b[38;5;246m[mirroring terminal]\x1b[0m");
-      } else if (msg.state === "exit") {
-        term.writeln("\r\n[process exited]");
-      } else if (msg.state === "error") {
-        term.writeln("\r\n[host error] " + String(msg.message || "unknown"));
-      }
+    if (data.type === "rit.focus") {
+      term.focus();
       return;
     }
   });
 
-  // Keystrokes from the popup -> forward to the terminal tab
+  mirrorPort.onMessage.addListener((msg) => {
+    if (!msg) return;
+
+    if (msg.type === "mirror.snapshot" && msg.reqId) {
+      if (msg.reqId !== lastReqId) return;
+      if (msg.error) {
+        term.writeln("[snapshot error] " + String(msg.error));
+      } else if (msg.data_b64) {
+        try { term.write(atob(msg.data_b64)); } catch (e) { term.writeln("[snapshot decode error] " + String(e)); }
+      }
+      return;
+    }
+
+    if (msg.type === "mirror.data" && msg.data_b64) {
+      try { term.write(atob(msg.data_b64)); } catch { }
+      return;
+    }
+
+    if (msg.type === "mirror.state") {
+      if (msg.state === "ready") term.writeln("[mirroring terminal]");
+      else if (msg.state === "exit") term.writeln("\r\n[process exited]");
+      else if (msg.state === "error") term.writeln("\r\n[host error] " + String(msg.message || "unknown"));
+      return;
+    }
+
+    if (msg.type === "mirror.reset") {
+      term.reset();
+      fit.fit();
+      lastReqId = null;
+      requestSnapshot();
+      return;
+    }
+  });
+
   term.onData((data) => {
     mirrorPort.postMessage({ type: "mirror.stdin", data });
   });
 
-  // Mirrors do not need to resize the PTY, they are view only
-} else {
-  // Normal terminal tab -> owns the PTY and connects to native host
-  const bgPort = chrome.runtime.connect({ name: "rit-terminal" });
+  new ResizeObserver(() => { fit.fit(); }).observe(root);
 
-  // Tell background that the view is ready to receive messages
+} else {
+  // Normal terminal tab
+  const bgPort = chrome.runtime.connect({ name: "rit-terminal" });
   bgPort.postMessage({ type: "rit.view.ready" });
 
-  // Load serialize addon so we can snapshot buffer on request
   const serialize = new D();
   term.loadAddon(serialize);
 
-  // Native messaging connection
   let hostPort = chrome.runtime.connectNative(HOST_NAME);
-
-  // State for initial open and input queueing
   let ptyOpened = false;
   let ptyReady = false;
   const pendingInput = [];
@@ -219,7 +232,7 @@ if (isMirror) {
   function openPty() {
     if (ptyOpened) return;
     ptyOpened = true;
-    term.writeln("\x1b[38;5;246m[connecting to native host...]\x1b[0m");
+    term.writeln("[connecting to native host...]");
     chrome.storage.sync.get(DEFAULTS, (cfgRaw) => {
       const cfg = { ...DEFAULTS, ...cfgRaw };
       const sh = (cfg.shellOverride || "").trim();
@@ -239,7 +252,6 @@ if (isMirror) {
     }
   }
 
-  // Host messages -> write and forward for mirrors
   hostPort.onMessage.addListener((msg) => {
     if (msg?.type === "data" && msg.data_b64) {
       term.write(atob(msg.data_b64));
@@ -250,7 +262,6 @@ if (isMirror) {
       ptyReady = true;
       hostPort.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
       if (readyFlushTimer) clearTimeout(readyFlushTimer);
-      // Delay flush so the shell prompt usually draws before injected text
       readyFlushTimer = setTimeout(flushPending, 200);
       bgPort.postMessage({ type: "mirror.state", state: "ready" });
       return;
@@ -275,30 +286,22 @@ if (isMirror) {
     bgPort.postMessage({ type: "mirror.state", state: "error", message: err });
   });
 
-  // Messages from background -> context menu injection and mirror keystrokes
+  // receive injections and mirror stdin
   bgPort.onMessage.addListener((msg) => {
     if (msg?.type === "rit.inject" && typeof msg.text === "string") {
       openPty();
-      if (ptyReady) {
-        hostPort.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
-      } else {
-        pendingInput.push(msg.text);
-      }
+      if (ptyReady) hostPort.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
+      else pendingInput.push(msg.text);
       return;
     }
     if (msg?.type === "mirror.stdin" && typeof msg.text === "string") {
       openPty();
-      if (ptyReady) {
-        hostPort.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
-      } else {
-        pendingInput.push(msg.text);
-      }
+      if (ptyReady) hostPort.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
+      else pendingInput.push(msg.text);
       return;
     }
-    // Snapshot request routed via background from a popup mirror
     if (msg?.type === "mirror.snapshot.request" && msg.reqId) {
       try {
-        // serialize() returns ANSI string for full buffer (scrollback + viewport)
         const dump = serialize.serialize();
         bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, data_b64: btoa(dump) });
       } catch (e) {
@@ -306,19 +309,28 @@ if (isMirror) {
       }
       return;
     }
+    // set session name -> update tab title for easier identification
+    if (msg?.type === "rit.setName") {
+      const name = String(msg.name || "");
+      document.title = name ? ("Terminal - " + name) : "Terminal";
+      return;
+    }
   });
 
-  // Keystrokes from this tab -> host
   term.onData((data) => {
     hostPort.postMessage({ type: "stdin", data_b64: btoa(data) });
   });
 
-  // Resize -> host
   new ResizeObserver(() => {
     fit.fit();
     hostPort.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
   }).observe(root);
 
-  // Open PTY on load
+  // optional cleanup on unload -> ask host to close
+  window.addEventListener("pagehide", () => {
+    try { hostPort.postMessage({ type: "close" }); } catch { }
+    try { hostPort.disconnect(); } catch { }
+  }, { once: true });
+
   openPty();
 }

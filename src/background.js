@@ -5,9 +5,39 @@
 // 3) confirm page flow for dangerous snippets
 
 import { DEFAULTS } from "./defaults.js";
-import { MENU_ID, SESSION_KEY, TERM_URL } from "./constants.js"
+import { MENU_ID_DEFAULT, SESSION_KEY, TERM_URL, MENU_ID_PICK_PARENT, MENU_ID_PICK_PREFIX } from "./constants.js"
 
-// Storage helpers for confirm flow
+// Terminal tab ports -> tabId -> Port ("rit-terminal")
+const termPorts = new Map();
+// Terminal tab readiness -> tabIds that sent rit.view.ready
+const termReady = new Set();
+// Waiters -> await port and view readiness per tab
+const termWaiters = new Map(); // tabId -> resolve[]
+const viewWaiters = new Map(); // tabId -> resolve[]
+// Mirror iframe ports -> Set<Port> ("rit-mirror")
+const mirrorPorts = new Set();
+// Mirror selection -> which tabId a given mirror iframe is following
+const mirrorSelection = new Map(); // Port -> tabId
+// Snapshot waiters -> reqId -> mirror Port
+const snapshotWaiters = new Map();
+
+// stored in chrome.storage.local as { sessionNames: { [tabId]: string } }
+async function getNameMap() {
+  const got = await chrome.storage.local.get("sessionNames");
+  return got.sessionNames || {};
+}
+async function setName(tabId, name) {
+  const map = await getNameMap();
+  if (name && name.trim()) map[String(tabId)] = name.trim();
+  else delete map[String(tabId)];
+  await chrome.storage.local.set({ sessionNames: map });
+}
+async function removeName(tabId) {
+  const map = await getNameMap();
+  delete map[String(tabId)];
+  await chrome.storage.local.set({ sessionNames: map });
+}
+
 async function getSettings() {
   const got = await chrome.storage.sync.get(DEFAULTS);
   return { ...DEFAULTS, ...got };
@@ -16,7 +46,6 @@ async function getSettings() {
 async function setPending(payload) {
   await chrome.storage.local.set({ [SESSION_KEY]: payload });
 }
-
 async function popPending() {
   const got = await chrome.storage.local.get(SESSION_KEY);
   await chrome.storage.local.remove(SESSION_KEY);
@@ -33,48 +62,6 @@ function findDangerousMatches(snippet, list) {
   return res;
 }
 
-async function ensureTerminalTabReady() {
-  const tabs = await chrome.tabs.query({ url: TERM_URL });
-  let tabId = tabs.length ? tabs[0].id : null;
-
-  if (!tabId) {
-    const created = await chrome.tabs.create({ url: TERM_URL, active: false });
-    tabId = created.id;
-  }
-
-  const okPort = await waitForPort(tabId);
-  const okReady = await waitForViewReady(tabId);
-  if (!okPort || !okReady) return null;
-  return tabId;
-}
-
-// Open or focus the single terminal page tab
-async function openOrFocusTerminal() {
-  const tabs = await chrome.tabs.query({ url: TERM_URL });
-  if (tabs.length) {
-    const t = tabs[0];
-    await chrome.tabs.update(t.id, { active: true });
-    await chrome.windows.update(t.windowId, { focused: true });
-    return t.id;
-  }
-  const created = await chrome.tabs.create({ url: TERM_URL, active: true });
-  return created.id;
-}
-
-// Ports and waiters
-// termPorts -> tabId to Port from the terminal page (name "rit-terminal")
-// termReady -> tabIds that signaled the view is ready to receive messages
-// mirrorPorts -> set of Ports from popup mirrors (name "rit-mirror")
-const termPorts = new Map();
-const termReady = new Set();
-const termWaiters = new Map();
-const viewWaiters = new Map();
-const mirrorPorts = new Set();
-
-// Snapshot routing for popup -> terminal tab roundtrip
-// snapshotWaiters -> reqId to mirror Port
-const snapshotWaiters = new Map();
-
 function resolveWaiters(map, key, ok) {
   const arr = map.get(key);
   if (!arr) return;
@@ -82,7 +69,6 @@ function resolveWaiters(map, key, ok) {
   map.delete(key);
 }
 
-// Wait for a terminal page Port to be available
 function waitForPort(tabId, timeoutMs = 5000) {
   return new Promise((resolve) => {
     if (termPorts.has(tabId)) return resolve(true);
@@ -91,14 +77,11 @@ function waitForPort(tabId, timeoutMs = 5000) {
     termWaiters.set(tabId, arr);
     setTimeout(() => {
       const left = (termWaiters.get(tabId) || []).filter(fn => fn !== resolve);
-      if (left.length) termWaiters.set(tabId, left);
-      else termWaiters.delete(tabId);
+      if (left.length) termWaiters.set(tabId, left); else termWaiters.delete(tabId);
       resolve(false);
     }, timeoutMs);
   });
 }
-
-// Wait for the terminal page to say it is ready to receive messages
 function waitForViewReady(tabId, timeoutMs = 5000) {
   return new Promise((resolve) => {
     if (termReady.has(tabId)) return resolve(true);
@@ -107,151 +90,300 @@ function waitForViewReady(tabId, timeoutMs = 5000) {
     viewWaiters.set(tabId, arr);
     setTimeout(() => {
       const left = (viewWaiters.get(tabId) || []).filter(fn => fn !== resolve);
-      if (left.length) viewWaiters.set(tabId, left);
-      else viewWaiters.delete(tabId);
+      if (left.length) viewWaiters.set(tabId, left); else viewWaiters.delete(tabId);
       resolve(false);
     }, timeoutMs);
   });
 }
 
-// Send a message to a terminal tab -> opens a terminal tab if none exists
-async function forwardToTerminalTab(message) {
-  // try active terminal tab first
-  const tabs = await chrome.tabs.query({ url: TERM_URL, active: true, currentWindow: true });
-  let port = tabs.length ? termPorts.get(tabs[0].id) : null;
+async function ensureTerminalTabReady(activate = true) {
+  const tabs = await chrome.tabs.query({ url: TERM_URL });
+  let tabId = tabs.length ? tabs[0].id : null;
 
-  // fallback to any connected terminal port
+  if (!tabId) {
+    const created = await chrome.tabs.create({ url: TERM_URL, active: !!activate });
+    tabId = created.id;
+  } else if (activate) {
+    const t = tabs[0];
+    await chrome.tabs.update(tabId, { active: true });
+    await chrome.windows.update(t.windowId, { focused: true });
+  }
+
+  const okPort = await waitForPort(tabId, 5000);
+  const okReady = await waitForViewReady(tabId, 5000);
+  if (!okPort || !okReady) return null;
+  return tabId;
+}
+
+async function focusTab(tabId) {
+  try {
+    const t = await chrome.tabs.get(tabId);
+    await chrome.tabs.update(tabId, { active: true });
+    await chrome.windows.update(t.windowId, { focused: true });
+  } catch { }
+}
+
+// always create a new terminal tab
+async function createTerminalTab(activate = false) {
+  const created = await chrome.tabs.create({ url: TERM_URL, active: !!activate });
+  const tabId = created.id;
+  await waitForPort(tabId, 5000);
+  await waitForViewReady(tabId, 5000);
+  await broadcastSessionsUpdate();
+  return tabId;
+}
+
+async function forwardToTerminalTab(message, preferredTabId = null) {
+  let port = preferredTabId != null ? termPorts.get(preferredTabId) : null;
+  if (!port) {
+    const tabs = await chrome.tabs.query({ url: TERM_URL, active: true, currentWindow: true });
+    if (tabs.length) port = termPorts.get(tabs[0].id) || null;
+  }
   if (!port) {
     for (const p of termPorts.values()) { port = p; break; }
   }
-
-  // if no port at all, open a terminal tab and wait for readiness
   if (!port) {
-    const tabId = await ensureTerminalTabReady();
+    const tabId = await ensureTerminalTabReady(false);
     if (!tabId) return false;
     port = termPorts.get(tabId) || null;
   }
-
   if (!port) return false;
-  try { port.postMessage(message); } catch {}
+  try { port.postMessage(message); } catch { }
   return true;
 }
 
+// list sessions -> include saved names
+async function listSessions() {
+  const tabs = await chrome.tabs.query({ url: TERM_URL });
+  const names = await getNameMap();
+  return tabs.map(t => ({
+    tabId: t.id,
+    windowId: t.windowId,
+    title: t.title || "Terminal",
+    active: Boolean(t.active),
+    name: names[String(t.id)] || ""
+  }));
+}
 
-// Relay and snapshot routing
+// label builder for context menu
+function labelForSession(it) {
+  const base = (it.name && it.name.trim()) ? it.name.trim() : (it.title || "Terminal");
+  return `${base} (tab ${it.tabId})`;
+}
+
+async function broadcastSessionsUpdate() {
+  const items = await listSessions();
+  chrome.runtime.sendMessage({ type: "mirror.sessions.updated", items }).catch(() => { });
+  await rebuildAllMenus();
+}
+
+// Build context menus based on how many terminal sessions exist
+async function rebuildAllMenus() {
+  try { await chrome.contextMenus.removeAll(); } catch { }
+
+  const sessions = await listSessions();
+
+  if (sessions.length <= 1) {
+    chrome.contextMenus.create({
+      id: MENU_ID_DEFAULT,
+      title: "Run in terminal",
+      contexts: ["selection"]
+    });
+
+    return;
+  }
+
+  chrome.contextMenus.create({
+    id: MENU_ID_PICK_PARENT,
+    title: "Run in terminal",
+    contexts: ["selection"]
+  });
+
+  for (const it of sessions) {
+    chrome.contextMenus.create({
+      id: MENU_ID_PICK_PREFIX + String(it.tabId),
+      parentId: MENU_ID_PICK_PARENT,
+      title: labelForSession(it),
+      contexts: ["selection"]
+    });
+  }
+}
+
+// ports
 chrome.runtime.onConnect.addListener((port) => {
-  // Terminal page port
   if (port.name === "rit-terminal") {
     const tabId = port.sender?.tab?.id;
     if (tabId == null) return;
 
     termPorts.set(tabId, port);
     resolveWaiters(termWaiters, tabId, true);
+    broadcastSessionsUpdate();
 
     port.onMessage.addListener((msg) => {
       if (!msg) return;
 
-      // Terminal tab signals that its view is ready
       if (msg.type === "rit.view.ready") {
         termReady.add(tabId);
         resolveWaiters(viewWaiters, tabId, true);
+        return;
       }
 
-      // Live relay -> forward to all popup mirrors
       if (msg.type === "mirror.data" || msg.type === "mirror.state") {
-        for (const m of mirrorPorts) { try { m.postMessage(msg); } catch { } }
+        for (const m of mirrorPorts) {
+          if (mirrorSelection.get(m) === tabId) {
+            try { m.postMessage(msg); } catch { }
+          }
+        }
+        return;
       }
 
-      // Snapshot response -> route back to the asking mirror popup
       if (msg.type === "mirror.snapshot" && msg.reqId) {
         const m = snapshotWaiters.get(msg.reqId);
         snapshotWaiters.delete(msg.reqId);
-        if (m) {
-          try { m.postMessage(msg); } catch { }
-        }
+        if (m) { try { m.postMessage(msg); } catch { } }
+        return;
       }
     });
 
     port.onDisconnect.addListener(() => {
       termPorts.delete(tabId);
       termReady.delete(tabId);
+      // remove name when tab closes
+      removeName(tabId).then(() => broadcastSessionsUpdate());
     });
 
     return;
   }
 
-  // Popup mirror port
   if (port.name === "rit-mirror") {
     mirrorPorts.add(port);
 
-    port.onMessage.addListener((msg) => {
+    (async () => {
+      const tabs = await chrome.tabs.query({ url: TERM_URL, active: true, currentWindow: true });
+      if (tabs.length) mirrorSelection.set(port, tabs[0].id);
+      else mirrorSelection.delete(port);
+    })();
+
+    port.onMessage.addListener(async (msg) => {
       if (!msg) return;
 
-      // Popup keystrokes -> terminal tab
-      if (msg.type === "mirror.stdin" && typeof msg.data === "string") {
-        forwardToTerminalTab({ type: "mirror.stdin", text: msg.data });
+      if (msg.type === "mirror.sessions.request") {
+        const items = await listSessions();
+        try { port.postMessage({ type: "mirror.sessions", items }); } catch { }
+        return;
       }
 
-      // Popup requests a snapshot -> route to terminal tab and remember where to respond
+      if (msg.type === "mirror.select" && typeof msg.tabId === "number") {
+        mirrorSelection.set(port, msg.tabId);
+        try { port.postMessage({ type: "mirror.selected", tabId: msg.tabId }); } catch { }
+        return;
+      }
+
+      if (msg.type === "mirror.stdin" && typeof msg.data === "string") {
+        const tabId = mirrorSelection.get(port) || null;
+        await forwardToTerminalTab({ type: "mirror.stdin", text: msg.data }, tabId);
+        return;
+      }
+
       if (msg.type === "mirror.snapshot.request" && msg.reqId) {
-        snapshotWaiters.set(msg.reqId, port);
-        forwardToTerminalTab({ type: "mirror.snapshot.request", reqId: msg.reqId });
+        const targetId = typeof msg.tabId === "number" ? msg.tabId : (mirrorSelection.get(port) || null);
+        if (targetId && !termPorts.get(targetId)) {
+          const ok = await waitForPort(targetId, 2000);
+          if (!ok) {
+            try { port.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, error: "terminal not ready" }); } catch { }
+            return;
+          }
+        }
+        if (targetId && termPorts.get(targetId)) {
+          snapshotWaiters.set(msg.reqId, port);
+          termPorts.get(targetId).postMessage({ type: "mirror.snapshot.request", reqId: msg.reqId });
+        }
+        return;
       }
     });
 
     port.onDisconnect.addListener(() => {
       mirrorPorts.delete(port);
+      mirrorSelection.delete(port);
     });
   }
 });
 
-// Context menu
-chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: MENU_ID,
-    title: "Run in Terminal",
-    contexts: ["selection"]
-  });
-});
+chrome.runtime.onStartup?.addListener(() => { rebuildAllMenus(); });
+chrome.runtime.onInstalled.addListener(() => { rebuildAllMenus(); });
 
-// Inject a snippet into the terminal page, opening it if needed
+// inject helper
 async function injectSnippetToTerminal(text) {
-  const tabs = await chrome.tabs.query({ url: TERM_URL });
-  const tabId = tabs.length ? tabs[0].id : (await chrome.tabs.create({ url: TERM_URL, active: true })).id;
-
-  const okPort = await waitForPort(tabId, 5000);
-  const okReady = await waitForViewReady(tabId, 5000);
-  if (!okPort || !okReady) {
-    console.warn("[RIT] terminal not ready (port:", okPort, " view:", okReady, ")");
+  const tabId = await ensureTerminalTabReady(true);
+  if (!tabId) {
+    console.warn("[RIT] terminal page not ready for injection");
     return;
   }
   const port = termPorts.get(tabId);
   if (!port) return;
-
-  // Small grace to ensure the listener is attached
   await new Promise(r => setTimeout(r, 50));
   port.postMessage({ type: "rit.inject", text });
 }
 
-// Context menu handler
+// inject into specific session
+async function injectSnippetToSpecificTab(tabId, text, activate = true) {
+  try { await chrome.tabs.get(tabId); } catch { return false; }
+
+  const okPort = await waitForPort(tabId, 3000);
+  const okReady = await waitForViewReady(tabId, 3000);
+  if (!okPort || !okReady) return false;
+
+  const port = termPorts.get(tabId);
+  if (!port) return false;
+
+  try { port.postMessage({ type: "rit.inject", text }); } catch { return false; }
+
+  if (activate) await focusTab(tabId);
+
+  return true;
+}
+
+// context menu handler
 chrome.contextMenus.onClicked.addListener(async (info) => {
-  if (info.menuItemId !== MENU_ID || !info.selectionText) return;
-  const settings = await getSettings();
-  const snippet = info.selectionText;
+  if (!info.selectionText) return;
 
-  const dangerous = settings.confirmOnDanger
-    ? findDangerousMatches(snippet, settings.dangerousSubstrings)
-    : [];
-
-  if (dangerous.length) {
-    await setPending({ snippet, dangerous, when: Date.now() });
-    await chrome.tabs.create({ url: "pages/confirm.html", active: true });
+  // default single-session item
+  if (info.menuItemId === MENU_ID_DEFAULT) {
+    const settings = await getSettings();
+    const snippet = info.selectionText;
+    const dangerous = settings.confirmOnDanger ? findDangerousMatches(snippet, settings.dangerousSubstrings) : [];
+    if (dangerous.length) {
+      await setPending({ snippet, dangerous, when: Date.now() });
+      await chrome.tabs.create({ url: "pages/confirm.html", active: true });
+      return;
+    }
+    injectSnippetToTerminal(snippet + "\n");
     return;
   }
-  injectSnippetToTerminal(snippet + "\n");
+
+  // per-session submenu item
+  if (typeof info.menuItemId === "string" && info.menuItemId.startsWith(MENU_ID_PICK_PREFIX)) {
+    const tabId = Number(info.menuItemId.slice(MENU_ID_PICK_PREFIX.length));
+    if (!Number.isFinite(tabId)) return;
+
+    const settings = await getSettings();
+    const snippet = info.selectionText;
+    const dangerous = settings.confirmOnDanger ? findDangerousMatches(snippet, settings.dangerousSubstrings) : [];
+
+    if (dangerous.length) {
+      await setPending({ snippet, dangerous, when: Date.now(), targetTabId: tabId });
+      await chrome.tabs.create({ url: "pages/confirm.html", active: true });
+      return;
+    }
+
+    const ok = await injectSnippetToSpecificTab(tabId, snippet + "\n");
+    if (!ok) console.warn("[RIT] specific-session inject failed for tab", tabId);
+    return;
+  }
 });
 
-// Confirm page -> inject
+
+// confirm page -> inject
 chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   if (msg?.type === "rit.confirm.choice") {
     (async () => {
@@ -260,15 +392,13 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         if (!pending) { sendResponse({ ok: false, error: "Nothing pending." }); return; }
         if (msg.choice === "cancel") { sendResponse({ ok: true, cancelled: true }); return; }
 
-        const tabId = await openOrFocusTerminal();
-        const okPort = await waitForPort(tabId, 5000);
-        const okReady = await waitForViewReady(tabId, 5000);
-        if (!okPort || !okReady) { sendResponse({ ok: false, error: "Terminal page not ready" }); return; }
-
+        const tabId = await ensureTerminalTabReady(true);
+        if (!tabId) { sendResponse({ ok: false, error: "Terminal page not ready" }); return; }
         const port = termPorts.get(tabId);
         if (!port) { sendResponse({ ok: false, error: "No terminal port" }); return; }
 
         port.postMessage({ type: "rit.inject", text: pending.snippet + "\n" });
+        await focusTab(tabId);
         sendResponse({ ok: true });
       } catch (e) {
         sendResponse({ ok: false, error: String(e) });
@@ -276,5 +406,70 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     })();
     return true;
   }
+});
+
+// popup support -> list, create new, rename
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (!msg) return;
+
+  if (msg.type === "mirror.sessions.request") {
+    (async () => {
+      const items = await listSessions();
+      sendResponse({ items });
+    })();
+    return true;
+  }
+
+  if (msg.type === "mirror.session.createBackground") {
+    (async () => {
+      try {
+        const newId = await createTerminalTab(false);
+        const items = await listSessions();
+        sendResponse({ ok: true, createdTabId: newId, items });
+      } catch (e) {
+        const items = await listSessions();
+        sendResponse({ ok: false, error: String(e), items });
+      }
+    })();
+    return true;
+  }
+
+  if (msg.type === "mirror.session.rename" && typeof msg.tabId === "number") {
+    (async () => {
+      const tabId = msg.tabId;
+      const name = String(msg.name || "");
+      await setName(tabId, name);
+      // tell the terminal page to update its title
+      const p = termPorts.get(tabId);
+      if (p) {
+        try { p.postMessage({ type: "rit.setName", name }); } catch { }
+      } else {
+        // if port not connected, try setting the tab title directly
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (n) => { try { document.title = n ? ("Terminal - " + n) : "Terminal"; } catch (e) { } },
+            args: [name]
+          });
+        } catch { }
+      }
+
+      // reset any mirrors currently showing this session
+      for (const m of mirrorPorts) {
+        if (mirrorSelection.get(m) === tabId) {
+          try { m.postMessage({ type: "mirror.reset" }); } catch { }
+        }
+      }
+
+      await broadcastSessionsUpdate();
+      sendResponse({ ok: true });
+    })();
+    return true;
+  }
+});
+
+// cleanup name when tab is closed directly
+chrome.tabs.onRemoved.addListener((tabId) => {
+  removeName(tabId).then(() => broadcastSessionsUpdate());
 });
 

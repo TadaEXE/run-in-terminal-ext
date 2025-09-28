@@ -1,43 +1,142 @@
-// Open Options
-document.getElementById("open-settings")?.addEventListener("click", () => {
-  chrome.runtime.openOptionsPage();
-});
+// Popup page controller
+// Purpose -> session dropdown, naming UI, iframe focus, and mirror selection
 
-// Ensure the iframe points to mirror mode
+const openSettingsBtn = document.getElementById("open-settings");
+openSettingsBtn?.addEventListener("click", () => chrome.runtime.openOptionsPage());
+
 const frame = document.getElementById("terminal-frame");
-if (frame && (!frame.src || !frame.src.includes("mirror=1"))) {
-  frame.src = chrome.runtime.getURL("pages/terminal.html?mirror=1");
-}
+const select = document.getElementById("session-select");
+const nameInput = document.getElementById("session-name");
+const saveBtn = document.getElementById("save-name");
 
-// Focus helper -> focuses iframe and asks the inner page to focus xterm
+// Focus helper -> focuses iframe and asks inner page to focus xterm
 function focusTerminalIframe(retries = 10) {
-  if (!frame) return;
-
   try {
-    // focus the iframe element itself
-    frame.focus();
-
-    // focus the iframe window if available
-    if (frame.contentWindow) {
+    frame?.focus();
+    if (frame?.contentWindow) {
       frame.contentWindow.focus();
-      // ask the inner page to focus xterm
       frame.contentWindow.postMessage({ type: "rit.focus" }, "*");
     }
-  } catch (e) {
-    // swallow errors and retry
+  } catch { }
+  if (retries > 0) setTimeout(() => focusTerminalIframe(retries - 1), 50);
+}
+
+// Send selection to iframe when it is ready
+function sendSelectionToIframe(tabId, retries = 10) {
+  const win = frame?.contentWindow;
+  if (win) {
+    try {
+      win.postMessage({ type: "rit.selectSession", tabId }, "*");
+      return;
+    } catch { }
+  }
+  if (retries > 0) setTimeout(() => sendSelectionToIframe(tabId, retries - 1), 50);
+}
+
+// Keep last sessions cache to populate the name field
+let lastSessions = [];
+
+// Render sessions into the dropdown and notify the iframe
+function renderSessions(items) {
+  lastSessions = Array.isArray(items) ? items : [];
+  const oldVal = select.value;
+  select.innerHTML = "";
+
+  for (const it of lastSessions) {
+    const labelName = it.name && it.name.trim() ? it.name.trim() : (it.title || "Terminal");
+    const opt = document.createElement("option");
+    opt.value = String(it.tabId);
+    opt.textContent = `${labelName} (tab ${it.tabId})${it.active ? " *" : ""}`;
+    select.appendChild(opt);
   }
 
-  // retry a few times in case load is still in progress
-  if (retries > 0) {
-    setTimeout(() => focusTerminalIframe(retries - 1), 50);
+  if ([...select.options].some(o => o.value === oldVal)) {
+    select.value = oldVal;
+  } else if (select.options.length) {
+    select.selectedIndex = 0;
+  }
+
+  // Update the name input for the selected item
+  if (select.value) {
+    const tabId = Number(select.value);
+    const item = lastSessions.find(x => x.tabId === tabId);
+    nameInput.value = item && item.name ? item.name : "";
+    sendSelectionToIframe(tabId);
+  } else {
+    nameInput.value = "";
   }
 }
 
-// Focus when the iframe finishes loading
-frame?.addEventListener("load", () => {
+// Load existing sessions only -> no auto create on popup open
+function loadSessions() {
+  chrome.runtime.sendMessage({ type: "mirror.sessions.request" }, (resp) => {
+    if (chrome.runtime.lastError) return;
+    const items = resp && resp.items ? resp.items : [];
+    renderSessions(items);
+  });
+}
+
+// Listen for background broadcasts when sessions change
+chrome.runtime.onMessage.addListener((msg) => {
+  if (msg && msg.type === "mirror.sessions.updated" && Array.isArray(msg.items)) {
+    renderSessions(msg.items);
+  }
+});
+
+// Selection handler -> switch mirror, refresh name field, focus iframe
+select.addEventListener("change", () => {
+  const tabId = Number(select.value);
+  const item = lastSessions.find(x => x.tabId === tabId);
+  nameInput.value = item && item.name ? item.name : "";
+  sendSelectionToIframe(tabId);
   focusTerminalIframe();
 });
 
-// Also try right away when the popup opens
+// Save button -> send rename request to background
+saveBtn?.addEventListener("click", () => {
+  const tabId = Number(select.value);
+  if (Number.isNaN(tabId)) return;
+  const name = nameInput.value || "";
+  chrome.runtime.sendMessage({ type: "mirror.session.rename", tabId, name }, () => {
+    // background will broadcast an updated sessions list
+  });
+});
+
+// Also save on Enter key inside the input
+nameInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    saveBtn?.click();
+  }
+});
+
+// Optional -> create a terminal tab in background, then refresh list and select it
+document.getElementById("new-session")?.addEventListener("click", () => {
+  chrome.runtime.sendMessage({ type: "mirror.session.createBackground" }, (resp) => {
+    loadSessions();
+    if (resp && resp.createdTabId != null) {
+      setTimeout(() => {
+        select.value = String(resp.createdTabId);
+        const tabId = Number(select.value);
+        if (!Number.isNaN(tabId)) {
+          sendSelectionToIframe(tabId);
+          focusTerminalIframe();
+        }
+        nameInput.value = "";
+      }, 100);
+    } else {
+      focusTerminalIframe();
+    }
+  });
+});
+
+// Focus when iframe loads and populate sessions
+frame.addEventListener("load", () => {
+  focusTerminalIframe();
+  loadSessions();
+});
+
+// Initial focus attempt and session load
 focusTerminalIframe();
+loadSessions();
 

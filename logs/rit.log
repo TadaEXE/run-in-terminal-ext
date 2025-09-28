@@ -895,3 +895,590 @@
 [2025-09-28 05:55:43] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
 [2025-09-28 05:55:48] recv: None
 [2025-09-28 05:55:48] EOF from browser; exiting
+[2025-09-28 06:08:25] recv: None
+[2025-09-28 06:08:25] EOF from browser; exiting
+[2025-09-28 06:08:31] host start pid=908437
+[2025-09-28 06:08:31] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:08:31] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 06:08:31] Spawning shell: /bin/bash [111x60]
+[2025-09-28 06:08:31] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:08:31] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 06:58:36] recv: None
+[2025-09-28 06:58:36] EOF from browser; exiting
+[2025-09-28 06:58:44] host start pid=916202
+[2025-09-28 06:58:44] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:58:44] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 06:58:44] Spawning shell: /bin/bash [111x60]
+[2025-09-28 06:58:44] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:58:44] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 06:58:55] recv: None
+[2025-09-28 06:58:55] EOF from browser; exiting
+[2025-09-28 06:58:57] host start pid=916568
+[2025-09-28 06:58:57] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 06:58:57] Spawning shell: /bin/bash [111x60]
+[2025-09-28 06:58:57] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:58:58] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:59:45] recv: None
+[2025-09-28 06:59:45] EOF from browser; exiting
+[2025-09-28 06:59:49] host start pid=917068
+[2025-09-28 06:59:49] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:59:49] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 06:59:49] Spawning shell: /bin/bash [111x60]
+[2025-09-28 06:59:49] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 06:59:49] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 07:17:54] recv: None
+[2025-09-28 07:17:54] EOF from browser; exiting
+[2025-09-28 07:17:58] host start pid=921362
+[2025-09-28 07:17:58] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:17:58] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:17:58] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:17:58] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:17:59] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 07:18:30] recv: None
+[2025-09-28 07:18:30] EOF from browser; exiting
+[2025-09-28 07:18:32] host start pid=921798
+[2025-09-28 07:18:32] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:18:32] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:18:32] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:18:32] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:19:06] recv: None
+[2025-09-28 07:19:06] EOF from browser; exiting
+[2025-09-28 07:26:51] host start pid=923748
+[2025-09-28 07:26:51] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:26:51] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:26:51] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:26:52] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:27:15] recv: None
+[2025-09-28 07:27:15] EOF from browser; exiting
+[2025-09-28 07:27:16] host start pid=924134
+[2025-09-28 07:27:16] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:27:16] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:27:16] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:27:17] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:27:59] recv: None
+[2025-09-28 07:27:59] EOF from browser; exiting
+[2025-09-28 07:28:03] host start pid=924631
+[2025-09-28 07:28:03] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:28:03] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:28:03] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:28:03] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:28:03] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 07:28:32] recv: None
+[2025-09-28 07:28:32] EOF from browser; exiting
+[2025-09-28 07:36:19] host start pid=928014
+[2025-09-28 07:36:19] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:36:19] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:36:19] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:36:19] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:36:20] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 07:37:05] recv: None
+[2025-09-28 07:37:05] EOF from browser; exiting
+[2025-09-28 07:56:38] host start pid=932143
+[2025-09-28 07:56:38] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:56:38] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:56:38] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:56:38] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:56:38] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 07:56:45] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 07:56:45] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 07:56:45] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 07:56:54] host start pid=932459
+[2025-09-28 07:56:54] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:56:54] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:56:54] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:56:54] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:57:12] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 07:57:12] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 07:57:12] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 07:57:26] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 07:57:26] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 07:57:26] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 07:57:28] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 07:57:28] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 07:57:28] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 07:58:39] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:58:39] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:58:48] recv: None
+[2025-09-28 07:58:48] EOF from browser; exiting
+[2025-09-28 07:58:48] recv: None
+[2025-09-28 07:58:48] EOF from browser; exiting
+[2025-09-28 07:58:51] host start pid=933107
+[2025-09-28 07:58:51] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 07:58:51] Spawning shell: /bin/bash [111x60]
+[2025-09-28 07:58:51] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 07:58:51] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:02:57] recv: None
+[2025-09-28 08:02:57] EOF from browser; exiting
+[2025-09-28 08:02:59] host start pid=934245
+[2025-09-28 08:02:59] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:02:59] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:02:59] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:03:00] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:06:06] recv: None
+[2025-09-28 08:06:06] EOF from browser; exiting
+[2025-09-28 08:06:09] host start pid=935119
+[2025-09-28 08:06:09] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:06:09] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:06:09] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:06:10] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:06:12] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:06:12] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:06:13] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:06:41] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:06:41] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:06:41] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:19:45] recv: None
+[2025-09-28 08:19:45] EOF from browser; exiting
+[2025-09-28 08:20:02] host start pid=937891
+[2025-09-28 08:20:02] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:20:02] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:20:02] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:20:02] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:20:02] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 08:20:16] host start pid=938203
+[2025-09-28 08:20:16] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:20:16] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:20:16] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:20:16] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:24:38] recv: None
+[2025-09-28 08:24:38] EOF from browser; exiting
+[2025-09-28 08:24:38] recv: None
+[2025-09-28 08:24:38] EOF from browser; exiting
+[2025-09-28 08:24:45] host start pid=939276
+[2025-09-28 08:24:45] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:24:45] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:24:45] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:24:46] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:24:57] host start pid=939581
+[2025-09-28 08:24:57] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:24:57] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:24:57] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:24:57] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:25:04] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:25:04] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:25:04] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:25:08] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:25:08] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 08:25:09] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:25:15] recv: None
+[2025-09-28 08:25:15] EOF from browser; exiting
+[2025-09-28 08:34:17] recv: None
+[2025-09-28 08:34:17] EOF from browser; exiting
+[2025-09-28 08:34:22] host start pid=941837
+[2025-09-28 08:34:22] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:22] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:34:22] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:23] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:24] host start pid=942108
+[2025-09-28 08:34:24] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:24] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:34:24] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:27] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:29] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:34:29] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:34:29] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:34:33] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:34:33] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 08:34:33] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:34:44] host start pid=942425
+[2025-09-28 08:34:44] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:44] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:34:44] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:49] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:34:52] recv: None
+[2025-09-28 08:34:52] EOF from browser; exiting
+[2025-09-28 08:34:52] recv: None
+[2025-09-28 08:34:52] EOF from browser; exiting
+[2025-09-28 08:38:57] recv: None
+[2025-09-28 08:38:57] EOF from browser; exiting
+[2025-09-28 08:39:01] host start pid=943528
+[2025-09-28 08:39:01] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:39:01] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:39:01] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:39:01] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:39:01] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 08:39:06] recv: {'type': 'close'}
+[2025-09-28 08:39:06] recv: None
+[2025-09-28 08:39:06] EOF from browser; exiting
+[2025-09-28 08:45:43] host start pid=945055
+[2025-09-28 08:45:43] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:45:43] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:45:43] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:45:43] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:45:47] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 08:45:47] recv: {'type': 'stdin', 'data_b64': 'eA=='}
+[2025-09-28 08:45:47] recv: {'type': 'stdin', 'data_b64': 'aQ=='}
+[2025-09-28 08:45:47] recv: {'type': 'stdin', 'data_b64': 'dA=='}
+[2025-09-28 08:45:47] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:45:51] recv: {'type': 'close'}
+[2025-09-28 08:45:51] recv: None
+[2025-09-28 08:45:51] EOF from browser; exiting
+[2025-09-28 08:46:48] host start pid=945534
+[2025-09-28 08:46:48] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:46:48] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:46:48] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:46:49] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:46:51] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:46:51] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:46:51] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:46:58] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 08:47:41] recv: {'type': 'close'}
+[2025-09-28 08:47:43] recv: None
+[2025-09-28 08:47:43] EOF from browser; exiting
+[2025-09-28 08:51:33] host start pid=947374
+[2025-09-28 08:51:33] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:51:33] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:51:33] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:51:33] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:51:34] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:51:34] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:51:34] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:57:19] recv: {'type': 'close'}
+[2025-09-28 08:57:21] recv: None
+[2025-09-28 08:57:21] EOF from browser; exiting
+[2025-09-28 08:57:29] host start pid=948829
+[2025-09-28 08:57:29] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:57:29] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:57:29] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:57:30] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:57:45] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:57:45] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:57:45] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:58:13] host start pid=949297
+[2025-09-28 08:58:13] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 08:58:13] Spawning shell: /bin/bash [111x60]
+[2025-09-28 08:58:13] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:58:13] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 08:58:28] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 08:58:28] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 08:58:28] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 08:59:04] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 08:59:57] recv: None
+[2025-09-28 08:59:57] EOF from browser; exiting
+[2025-09-28 08:59:57] recv: None
+[2025-09-28 08:59:57] EOF from browser; exiting
+[2025-09-28 09:00:05] host start pid=949985
+[2025-09-28 09:00:05] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 09:00:05] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 09:00:05] Spawning shell: /bin/bash [111x60]
+[2025-09-28 09:00:05] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 09:00:05] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:00:13] recv: None
+[2025-09-28 09:00:13] EOF from browser; exiting
+[2025-09-28 09:01:52] host start pid=950776
+[2025-09-28 09:01:52] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 09:01:52] Spawning shell: /bin/bash [111x60]
+[2025-09-28 09:01:52] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 09:01:52] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 09:01:58] host start pid=951063
+[2025-09-28 09:01:58] recv: {'type': 'open', 'cols': 111, 'rows': 60}
+[2025-09-28 09:01:58] Spawning shell: /bin/bash [111x60]
+[2025-09-28 09:01:58] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 09:02:01] recv: {'type': 'resize', 'cols': 111, 'rows': 60}
+[2025-09-28 09:02:09] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:02:09] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:02:09] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:03:00] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:03:00] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:03:00] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:03:08] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:03:08] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 09:03:08] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:03:13] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:03:13] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:03:13] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:03:13] recv: {'type': 'stdin', 'data_b64': 'bw=='}
+[2025-09-28 09:03:14] recv: {'type': 'stdin', 'data_b64': 'IA=='}
+[2025-09-28 09:03:14] recv: {'type': 'stdin', 'data_b64': 'Ig=='}
+[2025-09-28 09:03:15] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:03:15] recv: {'type': 'stdin', 'data_b64': 'aQ=='}
+[2025-09-28 09:03:15] recv: {'type': 'stdin', 'data_b64': 'bQ=='}
+[2025-09-28 09:03:16] recv: {'type': 'stdin', 'data_b64': 'Ig=='}
+[2025-09-28 09:03:16] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:03:20] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:03:20] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:03:20] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:03:21] recv: {'type': 'stdin', 'data_b64': 'bw=='}
+[2025-09-28 09:03:21] recv: {'type': 'stdin', 'data_b64': 'IA=='}
+[2025-09-28 09:03:24] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 09:03:24] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:03:24] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:03:24] recv: {'type': 'stdin', 'data_b64': 'Zg=='}
+[2025-09-28 09:03:24] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:03:34] recv: {'type': 'resize', 'cols': 116, 'rows': 60}
+[2025-09-28 09:03:34] recv: {'type': 'resize', 'cols': 120, 'rows': 60}
+[2025-09-28 09:03:34] recv: {'type': 'resize', 'cols': 130, 'rows': 60}
+[2025-09-28 09:03:34] recv: {'type': 'resize', 'cols': 131, 'rows': 60}
+[2025-09-28 09:03:34] recv: {'type': 'resize', 'cols': 132, 'rows': 60}
+[2025-09-28 09:03:34] recv: {'type': 'resize', 'cols': 132, 'rows': 60}
+[2025-09-28 09:03:35] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:03:44] host start pid=951713
+[2025-09-28 09:03:44] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:03:44] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:03:44] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:03:44] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:08:24] recv: None
+[2025-09-28 09:08:24] EOF from browser; exiting
+[2025-09-28 09:08:24] recv: None
+[2025-09-28 09:08:24] EOF from browser; exiting
+[2025-09-28 09:08:24] recv: None
+[2025-09-28 09:08:24] EOF from browser; exiting
+[2025-09-28 09:08:31] host start pid=952690
+[2025-09-28 09:08:31] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:08:31] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:08:31] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:08:32] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:08:37] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:08:37] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:08:37] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:08:40] recv: None
+[2025-09-28 09:08:40] EOF from browser; exiting
+[2025-09-28 09:16:05] host start pid=954314
+[2025-09-28 09:16:05] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:16:05] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:16:05] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:16:06] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:16:11] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:16:11] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:16:11] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:16:14] host start pid=954667
+[2025-09-28 09:16:14] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:16:14] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:16:14] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:16:17] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:16:18] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:16:18] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:16:18] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:16:28] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:16:28] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:16:28] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:16:30] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:16:30] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:16:31] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:16:31] recv: {'type': 'stdin', 'data_b64': 'bw=='}
+[2025-09-28 09:16:31] recv: {'type': 'stdin', 'data_b64': 'bQ=='}
+[2025-09-28 09:16:31] recv: {'type': 'stdin', 'data_b64': 'IA=='}
+[2025-09-28 09:16:32] recv: {'type': 'stdin', 'data_b64': 'fw=='}
+[2025-09-28 09:16:32] recv: {'type': 'stdin', 'data_b64': 'fw=='}
+[2025-09-28 09:16:33] recv: {'type': 'stdin', 'data_b64': 'IA=='}
+[2025-09-28 09:16:33] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 09:16:33] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:16:33] recv: {'type': 'stdin', 'data_b64': 'ZA=='}
+[2025-09-28 09:16:34] recv: {'type': 'stdin', 'data_b64': 'Zg=='}
+[2025-09-28 09:16:34] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:16:38] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:16:38] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:16:38] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:16:38] recv: {'type': 'stdin', 'data_b64': 'bw=='}
+[2025-09-28 09:16:38] recv: {'type': 'stdin', 'data_b64': 'IA=='}
+[2025-09-28 09:16:39] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:16:39] recv: {'type': 'stdin', 'data_b64': 'aQ=='}
+[2025-09-28 09:16:39] recv: {'type': 'stdin', 'data_b64': 'bQ=='}
+[2025-09-28 09:16:39] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:16:45] recv: None
+[2025-09-28 09:16:45] EOF from browser; exiting
+[2025-09-28 09:16:57] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:27:26] recv: None
+[2025-09-28 09:27:26] EOF from browser; exiting
+[2025-09-28 09:27:35] host start pid=957686
+[2025-09-28 09:27:35] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:27:35] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:27:35] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:27:35] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:27:35] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:27:44] host start pid=957981
+[2025-09-28 09:27:44] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:27:44] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:27:44] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:27:45] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:28:13] recv: None
+[2025-09-28 09:28:13] EOF from browser; exiting
+[2025-09-28 09:28:13] recv: None
+[2025-09-28 09:28:13] EOF from browser; exiting
+[2025-09-28 09:28:33] host start pid=958478
+[2025-09-28 09:28:33] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:28:33] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:28:33] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:28:34] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:29:10] recv: None
+[2025-09-28 09:29:10] EOF from browser; exiting
+[2025-09-28 09:29:21] host start pid=958996
+[2025-09-28 09:29:21] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:29:21] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:29:21] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:29:21] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:29:21] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:31:12] recv: None
+[2025-09-28 09:31:12] EOF from browser; exiting
+[2025-09-28 09:31:17] host start pid=959778
+[2025-09-28 09:31:17] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:31:17] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:31:17] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:31:17] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:31:17] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:31:25] host start pid=960079
+[2025-09-28 09:31:25] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:31:25] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:31:25] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:31:26] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:31:28] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:31:28] recv: {'type': 'stdin', 'data_b64': 'cw=='}
+[2025-09-28 09:31:29] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:36:15] recv: None
+[2025-09-28 09:36:15] EOF from browser; exiting
+[2025-09-28 09:36:15] recv: None
+[2025-09-28 09:36:15] EOF from browser; exiting
+[2025-09-28 09:36:50] host start pid=961357
+[2025-09-28 09:36:50] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:36:50] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:36:50] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:36:51] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:36:52] host start pid=961628
+[2025-09-28 09:36:52] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:36:52] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:36:52] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:36:55] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:38:06] recv: None
+[2025-09-28 09:38:06] EOF from browser; exiting
+[2025-09-28 09:38:06] recv: None
+[2025-09-28 09:38:06] EOF from browser; exiting
+[2025-09-28 09:38:11] host start pid=962274
+[2025-09-28 09:38:11] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:38:11] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:38:11] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:38:11] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:38:11] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:38:15] host start pid=962564
+[2025-09-28 09:38:15] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:38:15] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:38:15] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:38:16] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:40:02] recv: None
+[2025-09-28 09:40:02] EOF from browser; exiting
+[2025-09-28 09:40:02] recv: None
+[2025-09-28 09:40:02] EOF from browser; exiting
+[2025-09-28 09:40:15] host start pid=963458
+[2025-09-28 09:40:15] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:40:15] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:40:15] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:40:16] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:40:16] host start pid=963731
+[2025-09-28 09:40:16] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:40:16] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:40:16] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:40:19] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:12] recv: None
+[2025-09-28 09:46:12] EOF from browser; exiting
+[2025-09-28 09:46:12] recv: None
+[2025-09-28 09:46:12] EOF from browser; exiting
+[2025-09-28 09:46:19] host start pid=965606
+[2025-09-28 09:46:19] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:19] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:19] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:46:19] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:19] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:46:27] host start pid=965903
+[2025-09-28 09:46:27] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:27] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:46:27] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:28] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:46:47] recv: None
+[2025-09-28 09:46:47] EOF from browser; exiting
+[2025-09-28 09:46:47] recv: None
+[2025-09-28 09:46:47] EOF from browser; exiting
+[2025-09-28 09:47:04] host start pid=966357
+[2025-09-28 09:47:04] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:47:04] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:47:04] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:47:04] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:47:04] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:47:16] host start pid=966669
+[2025-09-28 09:47:16] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:47:16] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:47:16] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:47:17] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:48:00] recv: None
+[2025-09-28 09:48:00] EOF from browser; exiting
+[2025-09-28 09:48:00] recv: None
+[2025-09-28 09:48:00] EOF from browser; exiting
+[2025-09-28 09:50:03] host start pid=968236
+[2025-09-28 09:50:03] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:50:03] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:50:03] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:50:03] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:50:04] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:50:10] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:50:14] host start pid=968544
+[2025-09-28 09:50:14] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:50:14] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:50:14] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:50:15] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:51:40] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:51:40] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:51:40] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:51:41] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 09:51:41] recv: {'type': 'stdin', 'data_b64': 'cg=='}
+[2025-09-28 09:51:41] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:51:44] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:51:44] recv: {'type': 'stdin', 'data_b64': 'bA=='}
+[2025-09-28 09:51:44] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:51:45] recv: {'type': 'stdin', 'data_b64': 'YQ=='}
+[2025-09-28 09:51:45] recv: {'type': 'stdin', 'data_b64': 'cg=='}
+[2025-09-28 09:51:45] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:51:47] recv: {'type': 'stdin', 'data_b64': 'ZQ=='}
+[2025-09-28 09:51:47] recv: {'type': 'stdin', 'data_b64': 'Yw=='}
+[2025-09-28 09:51:47] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:51:47] recv: {'type': 'stdin', 'data_b64': 'bw=='}
+[2025-09-28 09:51:47] recv: {'type': 'stdin', 'data_b64': 'IA=='}
+[2025-09-28 09:51:48] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:51:48] recv: {'type': 'stdin', 'data_b64': 'aQ=='}
+[2025-09-28 09:51:48] recv: {'type': 'stdin', 'data_b64': 'DQ=='}
+[2025-09-28 09:52:39] recv: None
+[2025-09-28 09:52:39] EOF from browser; exiting
+[2025-09-28 09:52:39] recv: None
+[2025-09-28 09:52:39] EOF from browser; exiting
+[2025-09-28 09:52:43] host start pid=969478
+[2025-09-28 09:52:43] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:52:43] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:52:43] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:52:43] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:52:43] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:52:47] host start pid=969771
+[2025-09-28 09:52:47] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:52:47] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:52:47] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:52:48] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:22] recv: None
+[2025-09-28 09:54:22] EOF from browser; exiting
+[2025-09-28 09:54:22] recv: None
+[2025-09-28 09:54:22] EOF from browser; exiting
+[2025-09-28 09:54:26] host start pid=970435
+[2025-09-28 09:54:26] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:26] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:54:26] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:27] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:31] host start pid=970711
+[2025-09-28 09:54:31] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:31] Spawning shell: /bin/bash [145x60]
+[2025-09-28 09:54:31] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:33] recv: {'type': 'stdin', 'data_b64': 'aA=='}
+[2025-09-28 09:54:34] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 09:54:53] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 09:55:03] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 10:05:27] recv: None
+[2025-09-28 10:05:27] EOF from browser; exiting
+[2025-09-28 10:05:27] recv: None
+[2025-09-28 10:05:27] EOF from browser; exiting
+[2025-09-28 10:05:30] host start pid=972736
+[2025-09-28 10:05:30] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 10:05:30] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 10:05:30] Spawning shell: /bin/bash [145x60]
+[2025-09-28 10:05:30] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 10:05:30] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 10:05:36] host start pid=973097
+[2025-09-28 10:05:36] recv: {'type': 'open', 'cols': 145, 'rows': 60}
+[2025-09-28 10:05:36] Spawning shell: /bin/bash [145x60]
+[2025-09-28 10:05:36] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 10:05:37] recv: {'type': 'resize', 'cols': 145, 'rows': 60}
+[2025-09-28 10:05:53] recv: {'type': 'stdin', 'data_b64': 'bHMK'}
+[2025-09-28 10:06:01] recv: {'type': 'stdin', 'data_b64': 'bHMK'}

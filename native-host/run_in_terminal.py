@@ -1,11 +1,26 @@
 #!/usr/bin/env python3
-import os, sys, json, struct, threading, base64, subprocess, time, traceback
+import os
+import sys
+import json
+import threading
+import base64
+import subprocess
+import time
+import traceback
 
 IS_WIN = sys.platform == "win32"
-LOG = os.path.expandvars(r"%TEMP%\rit_host.log") if IS_WIN else "/home/tada/Projects/run-in-terminal-ext/logs/rit.log"
+LOG = (
+    os.path.expandvars(r"%TEMP%\rit_host.log")
+    if IS_WIN
+    else "/home/tada/Projects/run-in-terminal-ext/logs/rit.log"
+)
+
+LOGGING_ENABLED = True
 
 
 def log(msg):
+    if not LOGGING_ENABLED:
+        return
     try:
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(f"[{time.strftime('%F %T')}] {msg}\n")
@@ -37,6 +52,11 @@ def send_chunk(bs: bytes):
     send_msg({"type": "data", "data_b64": base64.b64encode(bs).decode("ascii")})
 
 
+def home_dir():
+    # -> resolve the home directory for both platforms
+    return os.path.expanduser("~") or (os.environ.get("USERPROFILE") or os.getcwd())
+
+
 class PTYShell:
     def __init__(self, shell=None, cols=80, rows=24):
         self.shell = shell
@@ -49,6 +69,12 @@ class PTYShell:
         self.winproc = None
 
     def spawn(self):
+        # -> always start in the user's home directory
+        try:
+            os.chdir(home_dir())
+        except Exception as e:
+            log(f"chdir failed: {e}")
+
         if not self.shell:
             self.shell = (
                 (
@@ -64,6 +90,7 @@ class PTYShell:
                 import pywinpty
 
                 self.winpty = pywinpty.PTY(cols=self.cols, rows=self.rows)
+                # -> pywinpty inherits current working directory from this process after chdir
                 self.winproc = pywinpty.Process(self.winpty, self.shell)
                 self._reader = threading.Thread(target=self._read_winpty, daemon=True)
                 self._reader.start()
@@ -76,6 +103,7 @@ class PTYShell:
                     stdin=subprocess.PIPE,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
+                    cwd=home_dir(),  # -> ensure home on fallback
                 )
                 self._reader = threading.Thread(target=self._read_pipe, daemon=True)
                 self._reader.start()
@@ -83,7 +111,7 @@ class PTYShell:
                 return
 
         # POSIX PTY
-        import pty, fcntl, termios, struct as st
+        import pty, fcntl, termios, struct as st, signal
 
         self.master_fd, self.slave_fd = pty.openpty()
         fcntl.ioctl(
@@ -91,12 +119,14 @@ class PTYShell:
             termios.TIOCSWINSZ,
             st.pack("HHHH", self.rows, self.cols, 0, 0),
         )
+        # -> start_new_session makes the child a session leader so we can kill the whole group
         self.proc = subprocess.Popen(
             [self.shell, "-l"],
             stdin=self.slave_fd,
             stdout=self.slave_fd,
             stderr=self.slave_fd,
             start_new_session=True,
+            cwd=home_dir(),  # -> ensure home on POSIX too
         )
         os.close(self.slave_fd)
         self._reader = threading.Thread(target=self._read_posix, daemon=True)
@@ -166,17 +196,54 @@ class PTYShell:
         send_msg({"type": "exit", "code": 0})
 
     def close(self):
+        # -> stronger cleanup: terminate process group on POSIX, close PTY handles
         try:
             if IS_WIN:
-                if self.winproc:
-                    self.winproc.kill()
-                if self.proc:
-                    self.proc.terminate()
+                try:
+                    if self.winproc:
+                        self.winproc.kill()
+                except Exception as e:
+                    log(f"winproc kill error: {e}")
+                try:
+                    if self.proc:
+                        self.proc.terminate()
+                except Exception as e:
+                    log(f"win pipe terminate error: {e}")
+                try:
+                    if self.winpty:
+                        # pywinpty objects close underlying handles
+                        self.winpty.close()
+                except Exception as e:
+                    log(f"winpty close error: {e}")
             else:
+                import signal
+
                 if self.proc:
-                    self.proc.terminate()
+                    try:
+                        # -> send SIGTERM to the whole process group
+                        os.killpg(self.proc.pid, signal.SIGTERM)
+                    except Exception as e:
+                        log(f"killpg SIGTERM error: {e}")
+                        try:
+                            self.proc.terminate()
+                        except Exception as e2:
+                            log(f"proc terminate error: {e2}")
+                    # -> wait briefly, then SIGKILL if needed
+                    deadline = time.time() + 2.0
+                    while time.time() < deadline:
+                        if self.proc.poll() is not None:
+                            break
+                        time.sleep(0.05)
+                    if self.proc.poll() is None:
+                        try:
+                            os.killpg(self.proc.pid, signal.SIGKILL)
+                        except Exception as e:
+                            log(f"killpg SIGKILL error: {e}")
                 if self.master_fd:
-                    os.close(self.master_fd)
+                    try:
+                        os.close(self.master_fd)
+                    except Exception as e:
+                        log(f"close master_fd error: {e}")
         except Exception as e:
             log(f"close error: {e}")
 
