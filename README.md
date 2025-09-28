@@ -23,6 +23,10 @@ Right-click code -> run it in a real shell inside a browser tab. The extension p
 - Linux/macOS: **curl** or **wget**.  
 - Windows: **PowerShell 5+**.
 
+### 0) Build the extension
+- `npm run release:chrome` or `npm run release:firefox`
+- Use only the output in `dist/` for the following step
+
 ### 1) Load the extension
 - **Chrome/Chromium/Brave/Edge:** `chrome://extensions` → **Load unpacked** -> select the repo folder.
 - **Firefox:** `about:debugging#/runtime/this-firefox` → **Load Temporary Add-on…** -> select `manifest.json`.
