@@ -1,240 +1,244 @@
-// Minimal installers + ping hooked to your existing buttons
-// Stays close to your options.html layout and simple options.js
-
+// src/installers.js
 import { DEFAULTS } from "./defaults.js";
 
-// Constants derived from manifest/runtime
+const GITHUB_OWNER = "TadaEXE";
+const GITHUB_REPO = "run-in-terminal-ext";
+const GITHUB_REF = "main";
+
 const MANIFEST = chrome.runtime.getManifest();
-const HOST_NAME = DEFAULTS.nativeHostName || "com.tada.run_in_terminal";
+export const HOST_NAME = (DEFAULTS && DEFAULTS.nativeHostName) || "com.tada.run_in_terminal";
 const GECKO_ID =
-  (MANIFEST.browser_specific_settings &&
-    MANIFEST.browser_specific_settings.gecko &&
-    MANIFEST.browser_specific_settings.gecko.id) ||
-  "run-in-terminal@tada.com";
-const CHROME_ORIGIN = `chrome-extension://${chrome.runtime.id}/`;
+  MANIFEST?.browser_specific_settings?.gecko?.id || "run-in-terminal@tada.com";
+const EXT_ID = chrome.runtime.id;
+const CHROME_ORIGIN = `chrome-extension://${EXT_ID}/`;
+const RAW_PY_URL = `https://raw.githubusercontent.com/${GITHUB_OWNER}/${GITHUB_REPO}/${GITHUB_REF}/native-host/run_in_terminal.py`;
 
-// Default host script path used inside generated installers
-// -> edit these in the generated file if your path differs
-const LINUX_MAC_HOST_PATH =
-  "/home/tada/Projects/run-in-terminal-ext/native-host/run_in_terminal.py";
-const WIN_HOST_PATH = `%USERPROFILE%\\run-in-terminal\\native-host\\run_in_terminal.py`;
+function detectBrand() {
+  const ua = navigator.userAgent || "";
+  if (/Firefox\/\d+/i.test(ua)) return "firefox";
+  if (/Edg\//i.test(ua)) return "edge";
+  if (/OPR\//i.test(ua)) return "opera";
+  if (/Vivaldi/i.test(ua)) return "vivaldi";
+  if (/Brave/i.test(ua)) return "brave";
+  if (/Chromium/i.test(ua)) return "chromium";
+  return "chrome";
+}
 
-// ---- JSON builders (the JSON gets embedded into the scripts via heredoc / here-string) ----
-function buildFirefoxHostJson(hostPath) {
-  const obj = {
+function buildFirefoxHostJson(hostPathLiteral) {
+  return JSON.stringify({
     name: HOST_NAME,
     description: "Run in Terminal native host",
-    path: hostPath,
+    path: hostPathLiteral,
     type: "stdio",
     allowed_extensions: [GECKO_ID],
-  };
-  return JSON.stringify(obj, null, 2);
+  }, null, 2);
 }
 
-function buildChromeHostJson(hostPath) {
-  const obj = {
+function buildChromeHostJson(hostPathLiteral) {
+  return JSON.stringify({
     name: HOST_NAME,
     description: "Run in Terminal native host",
-    path: hostPath,
+    path: hostPathLiteral,
     type: "stdio",
     allowed_origins: [CHROME_ORIGIN],
-  };
-  return JSON.stringify(obj, null, 2);
+  }, null, 2);
 }
 
-// ---- Linux/macOS .sh generator (installs for Firefox + Chrome, user scope) ----
-function makeLinuxMacInstallerSh(hostPath = LINUX_MAC_HOST_PATH) {
-  const ffJson = buildFirefoxHostJson(hostPath);
-  const chJson = buildChromeHostJson(hostPath);
+// Linux/macOS installer for current brand; detects apt/snap/flatpak on Linux
+function makeLinuxMacInstallerSh() {
+  const brand = detectBrand(); // firefox, chrome, chromium, brave, edge, opera, vivaldi
+  const jsonTemplate =
+    brand === "firefox"
+      ? buildFirefoxHostJson("$HOST_PATH")
+      : buildChromeHostJson("$HOST_PATH");
+  const title = brand.charAt(0).toUpperCase() + brand.slice(1);
 
-  // Use $HOME in bash, not ${HOME} to avoid JS interpolation problems
   return `#!/usr/bin/env bash
 set -euo pipefail
 
-# Run in Terminal native host installer (Linux/macOS, user scope)
-# Host path -> edit if needed:
-HOST_PATH="${hostPath}"
-HOST_NAME="${HOST_NAME}"
+RAW_URL="${RAW_PY_URL}"
+BRAND="${brand}"
 
-# Detect OS for directories
 OS="$(uname -s || echo unknown)"
 if [[ "$OS" == "Darwin" ]]; then
-  FF_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts"
-  CH_DIR="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
+  INSTALL_DIR="$HOME/Library/Application Support/RunInTerminal/native-host"
+  case "$BRAND" in
+    firefox) HOST_DIR="$HOME/Library/Application Support/Mozilla/NativeMessagingHosts" ;;
+    chrome) HOST_DIR="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts" ;;
+    chromium) HOST_DIR="$HOME/Library/Application Support/Chromium/NativeMessagingHosts" ;;
+    brave) HOST_DIR="$HOME/Library/Application Support/BraveSoftware/Brave-Browser/NativeMessagingHosts" ;;
+    edge) HOST_DIR="$HOME/Library/Application Support/Microsoft Edge/NativeMessagingHosts" ;;
+    opera) HOST_DIR="$HOME/Library/Application Support/com.operasoftware.Opera/NativeMessagingHosts" ;;
+    vivaldi) HOST_DIR="$HOME/Library/Application Support/Vivaldi/NativeMessagingHosts" ;;
+    *) HOST_DIR="$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts" ;;
+  esac
 else
-  FF_DIR="$HOME/.mozilla/native-messaging-hosts"
-  CH_DIR="$HOME/.config/google-chrome/NativeMessagingHosts"
+  INSTALL_DIR="$HOME/.local/share/run-in-terminal/native-host"
+
+  detect_linux_host_dir() {
+    case "$1" in
+      firefox)
+        if command -v flatpak >/dev/null 2>&1 && flatpak info org.mozilla.firefox >/dev/null 2>&1; then
+          echo "$HOME/.var/app/org.mozilla.firefox/.mozilla/native-messaging-hosts"; return
+        fi
+        if command -v snap >/dev/null 2>&1 && snap list firefox >/dev/null 2>&1; then
+          echo "$HOME/snap/firefox/common/.mozilla/native-messaging-hosts"; return
+        fi
+        echo "$HOME/.mozilla/native-messaging-hosts"; return
+        ;;
+      chromium)
+        if command -v flatpak >/dev/null 2>&1 && flatpak info org.chromium.Chromium >/dev/null 2>&1; then
+          echo "$HOME/.var/app/org.chromium.Chromium/config/chromium/NativeMessagingHosts"; return
+        fi
+        if command -v snap >/dev/null 2>&1 && snap list chromium >/dev/null 2>&1; then
+          echo "$HOME/snap/chromium/common/.config/chromium/NativeMessagingHosts"; return
+        fi
+        echo "$HOME/.config/chromium/NativeMessagingHosts"; return
+        ;;
+      chrome)
+        echo "$HOME/.config/google-chrome/NativeMessagingHosts"; return
+        ;;
+      brave)
+        if command -v flatpak >/dev/null 2>&1 && flatpak info com.brave.Browser >/dev/null 2>&1; then
+          echo "$HOME/.var/app/com.brave.Browser/config/BraveSoftware/Brave-Browser/NativeMessagingHosts"; return
+        fi
+        if command -v snap >/dev/null 2>&1 && snap list brave >/dev/null 2>&1; then
+          echo "$HOME/snap/brave/common/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts"; return
+        fi
+        echo "$HOME/.config/BraveSoftware/Brave-Browser/NativeMessagingHosts"; return
+        ;;
+      edge)
+        echo "$HOME/.config/microsoft-edge/NativeMessagingHosts"; return
+        ;;
+      opera)
+        if command -v flatpak >/dev/null 2>&1 && flatpak info com.opera.Opera >/dev/null 2>&1; then
+          echo "$HOME/.var/app/com.opera.Opera/config/opera/NativeMessagingHosts"; return
+        fi
+        if command -v snap >/dev/null 2>&1 && snap list opera >/dev/null 2>&1; then
+          echo "$HOME/snap/opera/common/.config/opera/NativeMessagingHosts"; return
+        fi
+        echo "$HOME/.config/opera/NativeMessagingHosts"; return
+        ;;
+      vivaldi)
+        if command -v flatpak >/dev/null 2>&1 && flatpak info com.vivaldi.Vivaldi >/dev/null 2>&1; then
+          echo "$HOME/.var/app/com.vivaldi.Vivaldi/config/vivaldi/NativeMessagingHosts"; return
+        fi
+        echo "$HOME/.config/vivaldi/NativeMessagingHosts"; return
+        ;;
+      *)
+        echo "$HOME/.config/google-chrome/NativeMessagingHosts"; return
+        ;;
+    esac
+  }
+
+  HOST_DIR="$(detect_linux_host_dir "$BRAND")"
 fi
 
-FF_JSON="$FF_DIR/${HOST_NAME}.json"
-CH_JSON="$CH_DIR/${HOST_NAME}.json"
+HOST_PATH="$INSTALL_DIR/run_in_terminal.py"
+HOST_JSON="$HOST_DIR/${HOST_NAME}.json"
 
-echo "Installing native host..."
-echo "  Host path: $HOST_PATH"
-echo "  Firefox json -> $FF_JSON"
-echo "  Chrome  json -> $CH_JSON"
+mkdir -p "$INSTALL_DIR" "$HOST_DIR"
 
-mkdir -p "$FF_DIR" "$CH_DIR"
-
-# Write Firefox JSON
-cat > "$FF_JSON" <<'JSON'
-${ffJson}
-JSON
-
-# Write Chrome JSON
-cat > "$CH_JSON" <<'JSON'
-${chJson}
-JSON
-
-chmod 644 "$FF_JSON" "$CH_JSON" || true
-
-# Make sure host script is executable (best effort)
-if [[ -f "$HOST_PATH" ]]; then
-  chmod +x "$HOST_PATH" || true
+if command -v curl >/dev/null 2>&1; then
+  curl -fsSL "$RAW_URL" -o "$HOST_PATH"
+elif command -v wget >/dev/null 2>&1; then
+  wget -qO "$HOST_PATH" "$RAW_URL"
+else
+  echo "no curl/wget" >&2; exit 1
 fi
 
-echo
-echo "Done."
-echo "Notes:"
-echo " - For Chromium, copy $CH_JSON to $HOME/.config/chromium/NativeMessagingHosts/${HOST_NAME}.json"
-echo " - Restart the browser(s) after installing."
+if [[ ! -s "$HOST_PATH" ]]; then echo "download failed" >&2; exit 1; fi
+chmod +x "$HOST_PATH" || true
+
+cat > "$HOST_JSON" <<JSON
+${jsonTemplate}
+JSON
+chmod 644 "$HOST_JSON" || true
+
+echo "Installed for ${title}"
+echo "Host: $HOST_PATH"
+echo "JSON: $HOST_JSON"
 `;
 }
 
-// ---- Windows PowerShell generator (installs for Firefox + Chrome, HKCU) ----
-function makeWindowsInstallerPs1(hostPathWin = WIN_HOST_PATH) {
-  const ffJson = buildFirefoxHostJson(hostPathWin);
-  const chJson = buildChromeHostJson(hostPathWin);
+// Windows installer for current brand (HKCU)
+function makeWindowsInstallerPs1() {
+  const brand = detectBrand();
 
-  // Escape backticks for PowerShell here-strings
-  const ffEsc = ffJson.replace(/`/g, "``");
-  const chEsc = chJson.replace(/`/g, "``");
+  const regKey = ({
+    firefox: `HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\${HOST_NAME}`,
+    chrome: `HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}`,
+    chromium: `HKCU:\\Software\\Chromium\\NativeMessagingHosts\\${HOST_NAME}`,
+    brave: `HKCU:\\Software\\BraveSoftware\\Brave-Browser\\NativeMessagingHosts\\${HOST_NAME}`,
+    edge: `HKCU:\\Software\\Microsoft\\Edge\\NativeMessagingHosts\\${HOST_NAME}`,
+    opera: `HKCU:\\Software\\Opera Software\\NativeMessagingHosts\\${HOST_NAME}`,
+    vivaldi: `HKCU:\\Software\\Vivaldi\\NativeMessagingHosts\\${HOST_NAME}`,
+  }[brand]) || `HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}`;
 
-  return `# Run in Terminal native host installer (Windows, HKCU)
+  const jsonTemplate =
+    brand === "firefox"
+      ? buildFirefoxHostJson("$HostPath")
+      : buildChromeHostJson("$HostPath");
+
+  const title = brand.charAt(0).toUpperCase() + brand.slice(1);
+
+  return `#ps1
 $ErrorActionPreference = "Stop"
+$RawUrl    = "${RAW_PY_URL}"
+$Base      = Join-Path $env:LOCALAPPDATA "RunInTerminal"
+$Install   = Join-Path $Base "native-host"
+$HostPath  = Join-Path $Install "run_in_terminal.py"
+$HostJson  = Join-Path $Base "${HOST_NAME}.${"${title}".ToLower()}.json"
 
-$HostPath = "${hostPathWin}"
-$Base = Join-Path $env:LOCALAPPDATA "RunInTerminal"
-New-Item -ItemType Directory -Force -Path $Base | Out-Null
+New-Item -ItemType Directory -Force -Path $Install | Out-Null
 
-$FirefoxJson = Join-Path $Base "${HOST_NAME}.firefox.json"
-$ChromeJson  = Join-Path $Base "${HOST_NAME}.chrome.json"
-
-# Write Firefox JSON
-@'
-${ffEsc}
-'@ | Set-Content -Path $FirefoxJson -Encoding UTF8 -NoNewline
-
-# Write Chrome JSON
-@'
-${chEsc}
-'@ | Set-Content -Path $ChromeJson -Encoding UTF8 -NoNewline
-
-# Registry mappings (user scope)
-New-Item -Path "HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\${HOST_NAME}" -Force | Out-Null
-Set-ItemProperty -Path "HKCU:\\Software\\Mozilla\\NativeMessagingHosts\\${HOST_NAME}" -Name "(default)" -Value $FirefoxJson
-
-New-Item -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}" -Force | Out-Null
-Set-ItemProperty -Path "HKCU:\\Software\\Google\\Chrome\\NativeMessagingHosts\\${HOST_NAME}" -Name "(default)" -Value $ChromeJson
-
-# Make host script executable if it exists (PowerShell-friendly shells may not need this)
-if (Test-Path -Path $HostPath) {
-  try { icacls $HostPath /grant "*S-1-5-32-545:(RX)" | Out-Null } catch {}
+try {
+  $wc = New-Object System.Net.WebClient
+  $wc.DownloadFile($RawUrl, $HostPath)
+} catch {
+  try { Invoke-WebRequest -Uri $RawUrl -OutFile $HostPath -UseBasicParsing } catch { throw }
 }
+if (!(Test-Path $HostPath) -or ((Get-Item $HostPath).Length -lt 100)) { throw "download failed" }
 
-Write-Host ""
-Write-Host "Installed:"
-Write-Host " - Firefox JSON -> $FirefoxJson"
-Write-Host " - Chrome  JSON -> $ChromeJson"
-Write-Host "Restart your browser(s)."
+@"${jsonTemplate}"@ | Set-Content -Path $HostJson -Encoding UTF8 -NoNewline
+
+New-Item -Path "${regKey}" -Force | Out-Null
+Set-ItemProperty -Path "${regKey}" -Name "(default)" -Value $HostJson
+
+Write-Host "Installed for ${title}"
+Write-Host "Host: $HostPath"
+Write-Host "JSON: $HostJson"
 `;
 }
 
-// ---- Download helpers ----
 async function downloadText(filename, mime, text) {
   const blob = new Blob([text], { type: mime || "text/plain" });
   const url = URL.createObjectURL(blob);
   try {
-    await chrome.downloads.download({
-      url,
-      filename,
-      saveAs: true,
-      conflictAction: "overwrite",
-    });
+    await chrome.downloads.download({ url, filename, saveAs: true, conflictAction: "overwrite" });
   } finally {
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 }
 
-// ---- Ping host ----
-function pingHost() {
-  const host = HOST_NAME;
-  let port;
-  try {
-    port = chrome.runtime.connectNative(host);
-  } catch (e) {
-    alert("Native host connect failed.\n\n" + String(e));
-    return;
-  }
-
-  let done = false;
-  const t = setTimeout(() => {
-    if (done) return;
-    done = true;
-    try { port.disconnect(); } catch { }
-    alert("Ping timeout. Is the native host installed?");
-  }, 3000);
-
-  port.onMessage.addListener((msg) => {
-    if (done) return;
-    done = true;
-    clearTimeout(t);
-    try { port.disconnect(); } catch { }
-    if (msg && msg.type === "pong") {
-      alert("Pong from native host.");
-    } else {
-      alert("Host responded.");
-    }
-  });
-
-  port.onDisconnect.addListener(() => {
-    if (done) return;
-    done = true;
-    clearTimeout(t);
-    const err = chrome.runtime.lastError?.message || "Disconnected.";
-    alert("Host disconnect: " + err);
-  });
-
-  try {
-    port.postMessage({ type: "ping" });
-  } catch (e) {
-    clearTimeout(t);
-    alert("Ping send failed.\n\n" + String(e));
-  }
-}
-
-// ---- Wire buttons on DOM ready ----
 document.addEventListener("DOMContentLoaded", () => {
   const btnLinux = document.getElementById("gen-linux");
   const btnWin = document.getElementById("gen-win");
-  const btnPing = document.getElementById("ping-host");
+
+  const brand = detectBrand();
+  const title = brand === "firefox" ? "firefox" : brand;
 
   if (btnLinux) {
     btnLinux.addEventListener("click", async () => {
-      const sh = makeLinuxMacInstallerSh(LINUX_MAC_HOST_PATH);
-      await downloadText("rit-install-linux-mac.sh", "text/x-sh", sh);
+      const sh = makeLinuxMacInstallerSh();
+      await downloadText(`rit-install-${title}-linux-mac.sh`, "text/x-sh", sh);
     });
   }
-
   if (btnWin) {
     btnWin.addEventListener("click", async () => {
-      const ps1 = makeWindowsInstallerPs1(WIN_HOST_PATH);
-      await downloadText("rit-install-windows.ps1", "text/plain", ps1);
+      const ps1 = makeWindowsInstallerPs1();
+      await downloadText(`rit-install-${title}-windows.ps1`, "text/plain", ps1);
     });
-  }
-
-  if (btnPing) {
-    btnPing.addEventListener("click", pingHost);
   }
 });
 
