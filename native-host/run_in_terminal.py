@@ -28,7 +28,7 @@ def log(msg):
         pass
 
 
-def read_msg():
+def read_from_ext():
     hdr = sys.stdin.buffer.read(4)
     if not hdr:
         return None
@@ -41,19 +41,18 @@ def read_msg():
         return None
 
 
-def send_msg(obj):
+def send_to_ext(obj):
     b = json.dumps(obj).encode("utf-8")
     sys.stdout.buffer.write(len(b).to_bytes(4, "little"))
     sys.stdout.buffer.write(b)
     sys.stdout.buffer.flush()
 
 
-def send_chunk(bs: bytes):
-    send_msg({"type": "data", "data_b64": base64.b64encode(bs).decode("ascii")})
+def send_chunk_to_ext(bs: bytes):
+    send_to_ext({"type": "data", "data_b64": base64.b64encode(bs).decode("ascii")})
 
 
 def home_dir():
-    # -> resolve the home directory for both platforms
     return os.path.expanduser("~") or (os.environ.get("USERPROFILE") or os.getcwd())
 
 
@@ -94,7 +93,7 @@ class PTYShell:
                 self.winproc = pywinpty.Process(self.winpty, self.shell)
                 self._reader = threading.Thread(target=self._read_winpty, daemon=True)
                 self._reader.start()
-                send_msg({"type": "ready", "platform": "win-pty", "shell": self.shell})
+                send_to_ext({"type": "ready", "platform": "win-pty", "shell": self.shell})
                 return
             except Exception as e:
                 log(f"pywinpty unavailable, fallback pipe: {e}")
@@ -107,7 +106,7 @@ class PTYShell:
                 )
                 self._reader = threading.Thread(target=self._read_pipe, daemon=True)
                 self._reader.start()
-                send_msg({"type": "ready", "platform": "win-pipe", "shell": self.shell})
+                send_to_ext({"type": "ready", "platform": "win-pipe", "shell": self.shell})
                 return
 
         # POSIX PTY
@@ -131,7 +130,7 @@ class PTYShell:
         os.close(self.slave_fd)
         self._reader = threading.Thread(target=self._read_posix, daemon=True)
         self._reader.start()
-        send_msg({"type": "ready", "platform": "posix-pty", "shell": self.shell})
+        send_to_ext({"type": "ready", "platform": "posix-pty", "shell": self.shell})
 
     def write(self, data: bytes):
         try:
@@ -168,10 +167,10 @@ class PTYShell:
                 chunk = os.read(self.master_fd, 8192)
                 if not chunk:
                     break
-                send_chunk(chunk)
+                send_chunk_to_ext(chunk)
         except OSError:
             pass
-        send_msg({"type": "exit", "code": self.proc.poll() if self.proc else None})
+        send_to_ext({"type": "exit", "code": self.proc.poll() if self.proc else None})
 
     def _read_pipe(self):
         try:
@@ -179,10 +178,10 @@ class PTYShell:
                 b = self.proc.stdout.read(8192)
                 if not b:
                     break
-                send_chunk(b)
+                send_chunk_to_ext(b)
         except Exception:
             pass
-        send_msg({"type": "exit", "code": self.proc.poll() if self.proc else None})
+        send_to_ext({"type": "exit", "code": self.proc.poll() if self.proc else None})
 
     def _read_winpty(self):
         try:
@@ -190,10 +189,10 @@ class PTYShell:
                 s = self.winpty.read(8192)
                 if not s:
                     break
-                send_chunk(s.encode("utf-8", "ignore"))
+                send_chunk_to_ext(s.encode("utf-8", "ignore"))
         except Exception:
             pass
-        send_msg({"type": "exit", "code": 0})
+        send_to_ext({"type": "exit", "code": 0})
 
     def close(self):
         # -> stronger cleanup: terminate process group on POSIX, close PTY handles
@@ -252,7 +251,7 @@ def main():
     log(f"host start pid={os.getpid()}")
     pty = None
     while True:
-        msg = read_msg()
+        msg = read_from_ext()
         log(f"recv: {msg!r}")
         if msg is None:
             log("EOF from browser; exiting")
@@ -272,7 +271,7 @@ def main():
                 pty.spawn()
             elif t == "stdin":
                 if not pty:
-                    send_msg({"type": "error", "message": "stdin before open"})
+                    send_to_ext({"type": "error", "message": "stdin before open"})
                 else:
                     data = base64.b64decode(msg.get("data_b64", ""))
                     pty.write(data)
@@ -283,14 +282,14 @@ def main():
                 if pty:
                     pty.close()
                     pty = None
-                    send_msg({"type": "exit", "code": 0})
+                    send_to_ext({"type": "exit", "code": 0})
             elif t == "ping":
-                send_msg({"type": "pong"})
+                send_to_ext({"type": "pong"})
             else:
-                send_msg({"type": "error", "message": f"unknown:{t}"})
+                send_to_ext({"type": "error", "message": f"unknown:{t}"})
         except Exception as e:
             log("handler error:\n" + traceback.format_exc())
-            send_msg({"type": "error", "message": str(e)})
+            send_to_ext({"type": "error", "message": str(e)})
 
 
 if __name__ == "__main__":
