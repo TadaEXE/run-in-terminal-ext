@@ -1,3 +1,5 @@
 logs/
 node_modules/
 dist/
+__pychache__/
+package-lock.json

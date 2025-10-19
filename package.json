@@ -1,22 +1,26 @@
 {
   "name": "run-in-terminal",
   "version": "0.2.0",
+  
   "scripts": {
     "build": "rollup -c",
     "build:watch": "rollup -c -w",
-    "dist:clean:firefox": "rm -rf dist/firefox && mkdir -p dist/firefox/run-in-terminal",
-    "dist:clean:chrome": "rm -rf dist/chrome && mkdir -p dist/chrome/run-in-terminal",
-    "dist:copy:firefox": "rsync -av --exclude '.git' --exclude 'node_modules' --exclude 'logs' --exclude '*.map' --exclude 'native-host' --exclude '*.entry.*' icons pages src manifest-firefox.json package.json package-lock.json dist/firefox/run-in-terminal/ && mv dist/firefox/run-in-terminal/manifest-firefox.json dist/firefox/run-in-terminal/manifest.json",
-    "dist:copy:chrome": "rsync -av --exclude '.git' --exclude 'node_modules' --exclude 'logs' --exclude '*.map' --exclude 'native-host' --exclude '*.entry.*' icons pages src manifest-chrome.json package.json package-lock.json dist/chrome/run-in-terminal/ && mv dist/chrome/run-in-terminal/manifest-chrome.json dist/chrome/run-in-terminal/manifest.json",
-    "pack:chrome": "cd dist/chrome/run-in-terminal && zip -r ../run-in-terminal-chrome-v0.2.0.zip .",
-    "pack:firefox": "cd dist/firefox/run-in-terminal && zip -r ../run-in-terminal-firefox-v0.2.0.xpi .",
+
+    "dist:clean:firefox": "rimraf dist/firefox && shx mkdir -p dist/firefox/run-in-terminal",
+    "dist:clean:chrome": "rimraf dist/chrome && shx mkdir -p dist/chrome/run-in-terminal",
+
+    "dist:copy:firefox": "shx mkdir -p dist/firefox/run-in-terminal && cpy \"icons/**\" \"pages/**\" \"src/**\" \"package.json\" \"package-lock.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/firefox/run-in-terminal --parents && cpy manifest-firefox.json dist/firefox/run-in-terminal --rename=manifest.json",
+    "dist:copy:chrome": "shx mkdir -p dist/chrome/run-in-terminal && cpy \"icons/**\" \"pages/**\" \"src/**\" \"package.json\" \"package-lock.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/chrome/run-in-terminal --parents && cpy manifest-chrome.json dist/chrome/run-in-terminal --rename=manifest.json",
+
+    "pack:chrome": "node scripts/pack.js chrome",
+    "pack:firefox": "node scripts/pack.js firefox",
+
     "release:firefox": "npm run dist:clean:firefox && npm run build && npm run dist:copy:firefox && npm run pack:firefox",
     "release:chrome": "npm run dist:clean:chrome && npm run build && npm run dist:copy:chrome && npm run pack:chrome",
-    
-    "sign:firefox": "web-ext sign -s dist/run-in-terminal -a dist/signed --id run-in-terminal@tada.com --channel listed --api-key $AMO_JWT_ISSUER --api-secret $AMO_JWT_SECRET",
-    "sign:firefox:unlisted": "web-ext sign -s dist/run-in-terminal -a dist/signed --channel unlisted --api-key $AMO_JWT_ISSUER --api-secret $AMO_JWT_SECRET",
 
-    "sign:chrome": "webstore upload --source dist/run-in-terminal-chrome-v$npm_package_version.zip --extension-id $CWS_EXTENSION_ID --client-id $CWS_CLIENT_ID --client-secret $CWS_CLIENT_SECRET --refresh-token $CWS_REFRESH_TOKEN --auto-publish"
+    "sign:firefox": "node scripts/sign-firefox.js listed",
+    "sign:firefox:unlisted": "node scripts/sign-firefox.js unlisted",
+    "sign:chrome": "node scripts/sign-chrome.js"
   },
   "keywords": [],
   "author": "TadaEXE",
@@ -26,9 +30,14 @@
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@types/chrome": "^0.1.1",
+    "bestzip": "^2.2.1",
+    "chrome-webstore-upload": "^4.0.3",
+    "cpy-cli": "^6.0.0",
+    "rimraf": "^6.0.1",
     "rollup": "^4.52.3",
     "rollup-plugin-postcss": "^4.0.2",
-    "web-ext": "^8.10.0",
+    "shx": "^0.4.0",
+    "web-ext": "^8.2.0",
     "webextension-polyfill": "^0.12.0"
   },
   "dependencies": {
