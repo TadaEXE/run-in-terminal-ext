@@ -9,8 +9,8 @@
     "dist:clean:firefox": "rimraf dist/firefox && shx mkdir -p dist/firefox/run-in-terminal",
     "dist:clean:chrome": "rimraf dist/chrome && shx mkdir -p dist/chrome/run-in-terminal",
 
-    "dist:copy:firefox": "shx mkdir -p dist/firefox/run-in-terminal && cpy \"icons/**\" \"pages/**\" \"src/**\" \"package.json\" \"package-lock.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/firefox/run-in-terminal --parents && cpy manifest-firefox.json dist/firefox/run-in-terminal --rename=manifest.json",
-    "dist:copy:chrome": "shx mkdir -p dist/chrome/run-in-terminal && cpy \"icons/**\" \"pages/**\" \"src/**\" \"package.json\" \"package-lock.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/chrome/run-in-terminal --parents && cpy manifest-chrome.json dist/chrome/run-in-terminal --rename=manifest.json",
+    "dist:copy:firefox": "shx mkdir -p dist/firefox/run-in-terminal && cpy \"src\" \"pages\" \"icons\" \"README.md\" \"package.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/firefox/run-in-terminal --parents && cpy manifest-firefox.json dist/firefox/run-in-terminal --rename=manifest.json",
+    "dist:copy:chrome": "shx mkdir -p dist/chrome/run-in-terminal && cpy \"src\" \"pages\" \"icons\" \"README.md\" \"package.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/firefox/run-in-terminal --parents && cpy manifest-chrome.json dist/chrome/run-in-terminal --rename=manifest.json",
 
     "pack:chrome": "node scripts/pack.js chrome",
     "pack:firefox": "node scripts/pack.js firefox",
