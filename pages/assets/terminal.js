@@ -234,11 +234,13 @@ if (isMirror) {
   const serialize = new D();
   term.loadAddon(serialize);
 
-  let hostPort = chrome.runtime.connectNative(HOST_NAME);
+  let ptyCon = chrome.runtime.connectNative(HOST_NAME);
   let ptyOpened = false;
   let ptyReady = false;
   const pendingInput = [];
   let readyFlushTimer = null;
+  const tabId = await chrome.tabs.getCurrent();
+  const ptySessionName = tabId.id? `tab${tabId.id}` : Date.now().toString();
 
   let warnOnClose = false;
   let userInteracted = false;
@@ -247,23 +249,35 @@ if (isMirror) {
   function openPty() {
     if (ptyOpened) return;
     ptyOpened = true;
-    term.writeln("[connecting to native host...]");
+    console.log(`Opening session ${ptySessionName}`);
+    term.writeln(`[connecting to native host session ${ptySessionName}...]`);
     chrome.storage.sync.get(DEFAULTS, (cfgRaw) => {
       const cfg = { ...DEFAULTS, ...cfgRaw };
       const sh = (cfg.shellOverride || "").trim();
-      hostPort.postMessage({
+      ptyCon.postMessage({
         type: "open",
         cols: term.cols,
         rows: term.rows,
+        session: ptySessionName,
         ...(sh && { shell: sh })
       });
+    });
+  }
+
+  function closePty() {
+    if (!ptyOpened) return;
+    ptyOpened = false;
+    console.log(`Closing session ${ptySessionName}`);
+    term.writeln(`[closing connection to native host session ${ptySessionName}]`);
+    ptyCon.postMessage({
+      type: "close"
     });
   }
 
   function flushPending() {
     while (pendingInput.length) {
       const text = pendingInput.shift();
-      hostPort.postMessage({ type: "stdin", data_b64: btoa(text) });
+      ptyCon.postMessage({ type: "stdin", data_b64: btoa(text) });
     }
   }
 
@@ -274,7 +288,11 @@ if (isMirror) {
     });
   }
 
-  hostPort.onMessage.addListener((msg) => {
+  ptyCon.onDisconnect.addListener((msg) => {
+    console.log(msg);
+  });
+
+  ptyCon.onMessage.addListener((msg) => {
     if (msg?.type === "data" && msg.data_b64) {
       term.write(atob(msg.data_b64));
       bgPort.postMessage({ type: "mirror.data", data_b64: msg.data_b64 });
@@ -282,7 +300,7 @@ if (isMirror) {
     }
     if (msg?.type === "ready") {
       ptyReady = true;
-      hostPort.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
+      ptyCon.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
       if (readyFlushTimer) clearTimeout(readyFlushTimer);
       readyFlushTimer = setTimeout(flushPending, 200);
       updateCloseProtection();
@@ -304,7 +322,7 @@ if (isMirror) {
     }
   });
 
-  hostPort.onDisconnect.addListener(() => {
+  ptyCon.onDisconnect.addListener(() => {
     const err = chrome.runtime.lastError?.message || "";
     term.writeln("\r\n[disconnected] " + err);
     bgPort.postMessage({ type: "mirror.state", state: "error", message: err });
@@ -314,18 +332,18 @@ if (isMirror) {
   bgPort.onMessage.addListener((msg) => {
     if (msg?.type === "rit.inject" && typeof msg.text === "string") {
       openPty();
-      if (ptyReady) hostPort.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
+      if (ptyReady) ptyCon.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
       else pendingInput.push(msg.text);
       return;
     }
     if (msg?.type === "mirror.stdin" && typeof msg.text === "string") {
       openPty();
-      if (ptyReady) hostPort.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
+      if (ptyReady) ptyCon.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
       else pendingInput.push(msg.text);
       return;
     }
     if (msg?.type === "rit.host.close") {
-      try { hostPort.postMessage({ type: "close" }); } catch { }
+      try { ptyCon.postMessage({ type: "close" }); } catch { }
       return;
     }
     if (msg?.type === "mirror.snapshot.request" && msg.reqId) {
@@ -350,12 +368,12 @@ if (isMirror) {
   });
 
   term.onData((data) => {
-    hostPort.postMessage({ type: "stdin", data_b64: btoa(data) });
+    ptyCon.postMessage({ type: "stdin", data_b64: btoa(data) });
   });
 
   new ResizeObserver(() => {
     fit.fit();
-    hostPort.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
+    ptyCon.postMessage({ type: "resize", cols: term.cols, rows: term.rows });
   }).observe(root);
 
   chrome.storage.onChanged.addListener((changes, area) => {
@@ -366,17 +384,17 @@ if (isMirror) {
 
   window.addEventListener("unload", () => {
     console.log("Closing connecting with host");
-    try { hostPort.postMessage({ type: "close" }); } catch { }
-    try { hostPort.disconnect(); } catch { }
+    closePty();
+    try { ptyCon.disconnect(); } catch { }
   });
 
   window.addEventListener("beforeunload", (e) => {
     if (externalCloseConfirm) {
       console.log("instantly closing due to external confirmation.");
+      closePty();
     } else {
       console.log("warnOnClose", warnOnClose, "userInteracted", userInteracted);
       if (warnOnClose && userInteracted) e.preventDefault();
-
     }
   });
 

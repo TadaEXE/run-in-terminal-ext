@@ -10,11 +10,11 @@ import secrets
 from dataclasses import dataclass, asdict
 from multiprocessing.connection import Connection, Listener, Client
 from pathlib import Path
-from typing import Optional, Dict, Any, Set
+from typing import Literal, Optional, Dict, Any, Set
 
 
 IS_WIN = sys.platform == "win32"
-ENABLE_LOGGING = True
+ENABLE_LOGGING: Literal["file"] | Literal["print"] | Literal["off"] = "file"
 
 
 def home_dir() -> str:
@@ -35,19 +35,27 @@ def base_dir() -> Path:
     Return base dir where data is stored.
     """
     if IS_WIN:
-        p = os.path.join(
+        tmp = os.path.join(
             os.path.expandvars(r"%LOCALAPPDATA%") or os.getcwd(), "run_in_terminal"
         )
-        return Path(p)
+        p = Path(tmp)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
 
     if sys.platform == "darwin":
-        return Path(os.path.expanduser("~/Library/Application Support/run_in_terminal"))
+        p = Path(os.path.expanduser("~/Library/Application Support/run_in_terminal"))
+        p.mkdir(parents=True, exist_ok=True)
+        return p
 
     xdg = os.environ.get("XDG_STATE_HOME")
     if xdg:
-        return Path(xdg) / "run_in_terminal"
+        p = Path(xdg) / "run_in_terminal"
+        p.mkdir(parents=True, exist_ok=True)
+        return p
 
-    return Path(os.path.expanduser("~/.local/state/run_in_terminal"))
+    p = Path(os.path.expanduser("~/.local/state/run_in_terminal"))
+    p.mkdir(parents=True, exist_ok=True)
+    return p
 
 
 def workers_dir() -> Path:
@@ -78,9 +86,12 @@ def log(l: str) -> None:
     Log any string to central log file.
     """
     t_fmt = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    with open(log_path(), "a", encoding="utf-8") as f:
-        f.write(f"<{t_fmt}> {l}\n")
-        f.flush()
+    if ENABLE_LOGGING == "print":
+        print(f"<{t_fmt}> {l}")
+    elif ENABLE_LOGGING == "file":
+        with open(log_path(), "a+", encoding="utf-8") as f:
+            f.write(f"<{t_fmt}> {l}\n")
+            f.flush()
 
 
 @dataclass
@@ -142,6 +153,7 @@ def remove_info(name: str) -> None:
     """
     Remove info file, if it exists
     """
+    log(f"Removing info {name}")
     p = worker_path(name)
     try:
         p.unlink()
@@ -278,7 +290,11 @@ class DaemonClient:
         Connect to an existing session or spawn and connect
         """
         self.conn = ensure_session(self.session_name, shell, cols, rows)
-        self._reader_thread = threading.Thread(target=self._reader_loop, daemon=True)
+        self._reader_thread = threading.Thread(
+            target=self._reader_loop,
+            name=f"run_in_terminal_daemon_client_{self.session_name}",
+            daemon=True,
+        )
         self._reader_thread.start()
 
     def _reader_loop(self) -> None:
@@ -286,6 +302,7 @@ class DaemonClient:
         Receives events fromthe daemon and forwards them to the extension.
         """
         try:
+            log(f"Reader thread {self.session_name} started")
             while not self._close_event.is_set() and self.conn:
                 try:
                     msg = self.conn.recv()
@@ -301,6 +318,7 @@ class DaemonClient:
                     break
         finally:
             try:
+                log(f"Reader thread {self.session_name} terminated")
                 if self.conn:
                     self.conn.close()
             except Exception:
@@ -333,8 +351,10 @@ class DaemonClient:
     def close(self) -> None:
         """ """
         self._close_event.set()
+        log(f"DaemonClient {self.session_name} closed")
         try:
             if self.conn:
+                self.conn.send({"cmd": "close"})
                 self.conn.close()
         except Exception:
             pass
@@ -530,12 +550,13 @@ class SessionServer:
     Incoming commands: stdin, resize, ping, info, close.
     Outgoing events: ready, data, exit, pong, info.
     """
+
     name: str
     shell: Optional[str]
     cols: int
     rows: int
     stop_evt: threading.Event = threading.Event()
-    clients: Set[Any] = set()
+    clients: Set[Connection] = set()
     clients_lock: threading.Lock = threading.Lock()
     pty: PTYShell
     platform: Optional[str] = None
@@ -572,12 +593,21 @@ class SessionServer:
         while not self.stop_evt.is_set():
             try:
                 conn = listener.accept()
+                if self.stop_evt.is_set():
+                    break
+
+                t = threading.Thread(
+                    target=self._client_loop,
+                    name=f"run_in_terminal_client_loop_{self.name}",
+                    args=(conn,),
+                    daemon=True,
+                )
+                t.start()
             except Exception:
                 continue
-            t = threading.Thread(target=self._client_loop, args=(conn,), daemon=True)
-            t.start()
+        log(f"SessionSever[{self.name}] accept loop ended")
 
-    def _client_loop(self, conn) -> None:
+    def _client_loop(self, conn: Connection) -> None:
         """
         Handles one client connection.
         """
@@ -604,9 +634,11 @@ class SessionServer:
                 try:
                     msg = conn.recv()
                 except EOFError:
-                    break
+                    continue
+
                 if not isinstance(msg, dict):
                     continue
+
                 cmd = msg.get("cmd")
                 if cmd == "stdin":
                     b64 = msg.get("data_b64", "")
@@ -637,9 +669,11 @@ class SessionServer:
                     except Exception:
                         pass
                 elif cmd == "close":
-                    self.stop_evt.set()
+                    log(f"SessionSever[{self.name}] client loop closing")
+                    self.close()
                     break
         finally:
+            self.stop_evt.set()
             with self.clients_lock:
                 if conn in self.clients:
                     self.clients.remove(conn)
@@ -664,38 +698,63 @@ class SessionServer:
                 {"type": "data", "data_b64": base64.b64encode(chunk).decode("ascii")}
             )
         self.broadcast({"type": "exit", "code": self.pty.poll_exit_code()})
+        log(f"SessionSever[{self.name}] pty reader ended")
 
     def run(self) -> None:
         """
         Starts the PTY, publishes WorkerInfo, and serves until stopped or PTY exit.
         """
-        authkey = secrets.token_bytes(32)
-        listener = Listener(("127.0.0.1", 0), authkey=authkey)
-        host, port = listener.address
+        self.authkey = secrets.token_bytes(32)
+        self.listener = Listener(("127.0.0.1", 0), authkey=self.authkey)
+        self.host, self.port = self.listener.address
         self.platform = self.pty.spawn()
         info = WorkerInfo(
             name=self.name,
             pid=os.getpid(),
-            host=str(host),
-            port=int(port),
-            authkey_b64=base64.urlsafe_b64encode(authkey).decode("ascii"),
+            host=str(self.host),
+            port=int(self.port),
+            authkey_b64=base64.urlsafe_b64encode(self.authkey).decode("ascii"),
             started_at=time.time(),
         )
         write_info(info)
         try:
-            t = threading.Thread(target=self._pty_reader, daemon=True)
+            t = threading.Thread(
+                target=self._pty_reader,
+                name=f"run_in_terminal_pty_reader_{self.name}",
+                daemon=True,
+            )
             t.start()
-            self._accept_loop(listener)
+            self._accept_loop(self.listener)
         finally:
+            self.close()
+
+    def close(self):
+        log(f"SessionSever[{self.name}] closing")
+        self.stop_evt.set()
+
+        # Because Listener.accept has no timeout we connect so it can see the stop event
+        with Client((self.host, int(self.port)), authkey=self.authkey) as c:
+            c.send({})
+
+        for conn in self.clients:
             try:
-                listener.close()
-            except Exception:
-                pass
-            try:
-                self.pty.close()
-            except Exception:
-                pass
-            remove_info(self.name)
+                conn.send({"cmd": "close"})
+                conn.close()
+            except Exception as e:
+                log(f"SessionSever[{self.name}] failed to close conn: {e}")
+
+        try:
+            self.listener.close()
+        except Exception:
+            log(f"SessionSever[{self.name}] couldn't close listener")
+
+        try:
+            self.pty.close()
+        except Exception:
+            log(f"SessionSever[{self.name}] couldn't close pty")
+
+        remove_info(self.name)
+        log(f"SessionSever[{self.name}] closed")
 
 
 def daemon_detach_posix() -> None:
@@ -719,6 +778,7 @@ def session_main(name: str, shell_token: str, cols: str, rows: str) -> None:
     """
     Entry point for session daemon mode. shell_token is "_" for default shell.
     """
+    log(f"Session {name} started.")
     if not IS_WIN:
         daemon_detach_posix()
     shell = None if shell_token == "_" else shell_token
@@ -731,53 +791,58 @@ def host_main() -> None:
     Entry point for host mode. Reads messages from the extension, attaches to a session daemon,
     and bridges messages in both directions. The session continues to live after host exit.
     """
+    log("Started native host")
     session = None
     client = None
     shell = None
     cols = 100
     rows = 30
-    while True:
-        msg = read_from_ext()
-        if msg is None:
-            if client:
-                try:
-                    client.close()
-                except Exception:
-                    pass
-            return
-        try:
-            t = msg.get("type")
-            if t == "open":
-                session = msg.get("session") or "default"
-                shell = msg.get("shell")
-                cols = int(msg.get("cols", cols))
-                rows = int(msg.get("rows", rows))
-                dc = DaemonClient(session)
-                dc.connect_or_spawn(shell=shell, cols=cols, rows=rows)
-                client = dc
-            elif t == "stdin":
-                if not client:
-                    send_to_ext({"type": "error", "message": "stdin before open"})
+    received_close = False
+    try:
+        while not received_close:
+            msg = read_from_ext()
+            if msg is None:
+                if client:
+                    try:
+                        client.close()
+                    except Exception:
+                        pass
+                return
+            try:
+                t = msg.get("type")
+                if t == "open":
+                    session = msg.get("session") or "default"
+                    shell = msg.get("shell")
+                    cols = int(msg.get("cols", cols))
+                    rows = int(msg.get("rows", rows))
+                    client = DaemonClient(session)
+                    client.connect_or_spawn(shell=shell, cols=cols, rows=rows)
+                elif t == "stdin":
+                    if not client:
+                        send_to_ext({"type": "error", "message": "stdin before open"})
+                    else:
+                        data = base64.b64decode(msg.get("data_b64", ""))
+                        client.stdin(data)
+                elif t == "resize":
+                    if client:
+                        client.resize(msg.get("cols", cols), msg.get("rows", rows))
+                elif t == "ping":
+                    if client:
+                        client.ping()
+                    else:
+                        send_to_ext({"type": "pong"})
+                elif t == "close":
+                    received_close = True
+                    if client:
+                        client.close()
+                        client = None
+                        send_to_ext({"type": "exit", "code": 0})
                 else:
-                    data = base64.b64decode(msg.get("data_b64", ""))
-                    client.stdin(data)
-            elif t == "resize":
-                if client:
-                    client.resize(msg.get("cols", cols), msg.get("rows", rows))
-            elif t == "ping":
-                if client:
-                    client.ping()
-                else:
-                    send_to_ext({"type": "pong"})
-            elif t == "close":
-                if client:
-                    client.close()
-                    client = None
-                    send_to_ext({"type": "exit", "code": 0})
-            else:
-                send_to_ext({"type": "error", "message": "unknown"})
-        except Exception as e:
-            send_to_ext({"type": "error", "message": str(e)})
+                    send_to_ext({"type": "error", "message": "unknown"})
+            except Exception as e:
+                send_to_ext({"type": "error", "message": str(e)})
+    finally:
+        log(f"Stopped native host {session}")
 
 
 def main() -> None:
@@ -795,5 +860,5 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        pass
+    finally:
+        log(f"{sys.argv} Exited")

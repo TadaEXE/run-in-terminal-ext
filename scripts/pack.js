@@ -1,27 +1,23 @@
 /**
  * Cross-platform zipping without shell var expansion.
+ *
+ * Usage:
+ * node pack.js [PATH]
+ *
  * Creates:
- *  - dist/chrome/run-in-terminal-chrome-v{version}.zip
- *  - dist/firefox/run-in-terminal-firefox-v{version}.xpi
+ * PATH.zip
+ * or (if firefox in path)
+ * PATH.xpi
  */
 const path = require('path');
 const bestzip = require('bestzip');
 const { version } = require('../package.json');
 
-const target = process.argv[2]; // 'chrome' | 'firefox'
-if (!['chrome', 'firefox'].includes(target)) {
-  console.error('Usage: node scripts/pack.js <chrome|firefox>');
-  process.exit(1);
-}
+const srcDir = process.argv[2];
+const ff = srcDir.includes("firefox");
 
 (async () => {
-  const isChrome = target === 'chrome';
-  const srcDir = isChrome
-    ? 'dist/chrome/run-in-terminal/**'
-    : 'dist/firefox/run-in-terminal/**';
-  const outFile = isChrome
-    ? `dist/chrome/run-in-terminal-chrome-v${version}.zip`
-    : `dist/firefox/run-in-terminal-firefox-v${version}.xpi`;
+  const outFile = ff ? `${srcDir}-v${version}.xpi` : `${srcDir}-v${version}.zip`;
 
   await bestzip({
     source: srcDir,
