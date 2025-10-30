@@ -129,7 +129,6 @@ const term = new wl({
   cursorBlink: true,
   theme: { background: "#111111" },
   scrollback: 5000,
-  windowOptions: { getCellSizePixels: true }
 });
 const fit = new o();
 term.loadAddon(fit);
@@ -140,13 +139,19 @@ fit.fit();
 term.focus();
 root.addEventListener("mousedown", () => term.focus());
 
-const isMirror = new URLSearchParams(location.search).get("mirror") === "1";
+const params = new URLSearchParams(location.search);
+const isMirror = params.get("mirror") === "1";
 
 if (isMirror) {
   // Mirror mode
   const mirrorPort = chrome.runtime.connect({ name: "rit-mirror" });
   let selectedTabId = null;
   let lastReqId = null;
+  const forcedTabId = Number(params.get("tabId") || "") || null;
+  if (forcedTabId) {
+    try { mirrorPort.postMessage({ type: "mirror.select", tabId: forcedTabId }); } catch { }
+    requestSnapshot();
+  }
 
   function requestSnapshot() {
     if (selectedTabId == null) return;
@@ -179,7 +184,7 @@ if (isMirror) {
     if (data.type === "rit.clear") {
       selectedTabId = null;
       term.reset();
-      // fit.fit();
+      fit.fit();
       lastReqId = null;
       return;
     }
@@ -189,7 +194,7 @@ if (isMirror) {
     if (!msg) return;
 
     if (msg.type === "mirror.snapshot" && msg.reqId) {
-      if (msg.reqId !== lastReqId) return;
+      // if (msg.reqId !== lastReqId) return;
       if (msg.error) {
         term.writeln("[snapshot error] " + String(msg.error));
       } else if (msg.data_b64) {
@@ -204,9 +209,16 @@ if (isMirror) {
     }
 
     if (msg.type === "mirror.state") {
-      if (msg.state === "ready") term.writeln("[mirroring terminal]");
-      else if (msg.state === "exit") term.writeln("\r\n[process exited]");
-      else if (msg.state === "error") term.writeln("\r\n[host error] " + String(msg.message || "unknown"));
+      if (msg.state === "ready") {
+        term.writeln("[mirroring terminal]");
+        requestSnapshot();
+      }
+      else if (msg.state === "exit") {
+        term.writeln("\r\n[process exited]");
+      }
+      else if (msg.state === "error") {
+        term.writeln("\r\n[host error] " + String(msg.message || "unknown"));
+      }
       return;
     }
 
@@ -223,9 +235,11 @@ if (isMirror) {
     mirrorPort.postMessage({ type: "mirror.stdin", data });
   });
 
-  // new ResizeObserver(() => { fit.fit(); }).observe(root);
+  new ResizeObserver(() => { fit.fit(); }).observe(root);
 
 } else { // Normal terminal tab
+  const serialize = new D();
+  term.loadAddon(serialize);
 
   let bgPort = null;
   let reconnectTimer = 0;
@@ -298,8 +312,6 @@ if (isMirror) {
   }
   connectBg();
 
-  const serialize = new D();
-  term.loadAddon(serialize);
 
   let ptyCon = chrome.runtime.connectNative(HOST_NAME);
   let ptyOpened = false;

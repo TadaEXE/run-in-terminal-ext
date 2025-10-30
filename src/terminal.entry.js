@@ -23,13 +23,19 @@ fit.fit();
 term.focus();
 root.addEventListener("mousedown", () => term.focus());
 
-const isMirror = new URLSearchParams(location.search).get("mirror") === "1";
+const params = new URLSearchParams(location.search);
+const isMirror = params.get("mirror") === "1";
 
 if (isMirror) {
   // Mirror mode
   const mirrorPort = chrome.runtime.connect({ name: "rit-mirror" });
   let selectedTabId = null;
   let lastReqId = null;
+  const forcedTabId = Number(params.get("tabId") || "") || null;
+  if (forcedTabId) {
+    try { mirrorPort.postMessage({ type: "mirror.select", tabId: forcedTabId }); } catch { }
+    requestSnapshot();
+  }
 
   function requestSnapshot() {
     if (selectedTabId == null) return;
@@ -109,6 +115,8 @@ if (isMirror) {
   new ResizeObserver(() => { fit.fit(); }).observe(root);
 
 } else { // Normal terminal tab
+  const serialize = new SerializeAddon();
+  term.loadAddon(serialize);
 
   let bgPort = null;
   let reconnectTimer = 0;
@@ -181,8 +189,6 @@ if (isMirror) {
   }
   connectBg()
 
-  const serialize = new SerializeAddon();
-  term.loadAddon(serialize);
 
   let ptyCon = chrome.runtime.connectNative(HOST_NAME);
   let ptyOpened = false;

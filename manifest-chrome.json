@@ -17,6 +17,7 @@
     "storage",
     "nativeMessaging",
     "tabs",
+    "activeTab",
     "downloads",
     "scripting"
   ],
@@ -37,6 +38,15 @@
       "id": "run-in-terminal@tada.com",
       "strict_min_version": "109.0"
     }
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "pages/terminal.html",
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ]
+
 }
 

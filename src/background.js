@@ -7,6 +7,7 @@
 import { DEFAULTS } from "./defaults.js";
 import { MENU_ID_DEFAULT, SESSION_KEY, TERM_URL, MENU_ID_PICK_PARENT, MENU_ID_PICK_PREFIX } from "./constants.js"
 import { storedSet, storedMap } from "./util.js"
+import { openInlineMirror } from "./inline_overlay.js"
 
 
 // Ephemeral:
@@ -193,8 +194,8 @@ async function rebuildAllMenus() {
 
 // ports
 chrome.runtime.onConnect.addListener((port) => {
+  const tabId = port.sender?.tab?.id;
   if (port.name === "rit-terminal") {
-    const tabId = port.sender?.tab?.id;
     if (tabId == null) return;
 
     termPorts.set(tabId, port);
@@ -245,8 +246,7 @@ chrome.runtime.onConnect.addListener((port) => {
     mirrorPorts.add(port);
 
     (async () => {
-      const tabs = await chrome.tabs.query({ url: TERM_URL, active: true, currentWindow: true });
-      if (tabs.length) mirrorSelection.set(port, tabs[0].id);
+      if (tabId) mirrorSelection.set(port, tabId);
       else mirrorSelection.delete(port);
     })();
 
@@ -303,8 +303,8 @@ chrome.runtime.onStartup?.addListener(() => { rebuildAllMenus(); });
 chrome.runtime.onInstalled.addListener(() => { rebuildAllMenus(); });
 
 // inject helper
-async function injectSnippetToTerminal(text) {
-  const tabId = await ensureTerminalTabReady(true);
+async function injectSnippetToTerminal(text, activate) {
+  const tabId = await ensureTerminalTabReady(activate);
   if (!tabId) {
     console.warn("[RIT] terminal page not ready for injection");
     return;
@@ -313,6 +313,7 @@ async function injectSnippetToTerminal(text) {
   if (!port) return;
   await new Promise(r => setTimeout(r, 50));
   port.postMessage({ type: "rit.inject", text });
+  return tabId;
 }
 
 // inject into specific session
@@ -334,7 +335,7 @@ async function injectSnippetToSpecificTab(tabId, text, activate = true) {
 }
 
 // context menu handler
-chrome.contextMenus.onClicked.addListener(async (info) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!info.selectionText) return;
 
   // default single-session item
@@ -347,7 +348,10 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
       await chrome.tabs.create({ url: "pages/confirm.html", active: true });
       return;
     }
-    injectSnippetToTerminal(snippet + "\n");
+    const tabId = await injectSnippetToTerminal(snippet + "\n", false);
+    if (tab?.id) {
+      await openInlineMirror(tab.id, tabId);
+    }
     return;
   }
 
@@ -366,7 +370,11 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
       return;
     }
 
-    const ok = await injectSnippetToSpecificTab(tabId, snippet + "\n");
+    if (tab?.id) {
+      await openInlineMirror(tab.id, tabId);
+    }
+
+    const ok = await injectSnippetToSpecificTab(tabId, snippet + "\n", false);
     if (!ok) console.warn("[RIT] specific-session inject failed for tab", tabId);
     return;
   }
