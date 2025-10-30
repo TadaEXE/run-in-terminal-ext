@@ -226,10 +226,78 @@ if (isMirror) {
 
   new ResizeObserver(() => { fit.fit(); }).observe(root);
 
-} else {
-  // Normal terminal tab
-  const bgPort = chrome.runtime.connect({ name: "rit-terminal" });
-  bgPort.postMessage({ type: "rit.view.ready" });
+} else { // Normal terminal tab
+
+  let bgPort = null;
+  let reconnectTimer = 0;
+  let reconnectDelayMs = 200;
+
+  // receive injections and mirror stdin
+  function attachBgPortOnMessage(port) {
+    port.onMessage.addListener((msg) => {
+      if (msg?.type === "rit.inject" && typeof msg.text === "string") {
+        openPty();
+        if (ptyReady) ptyCon.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
+        else pendingInput.push(msg.text);
+        return;
+      }
+      if (msg?.type === "mirror.stdin" && typeof msg.text === "string") {
+        openPty();
+        if (ptyReady) ptyCon.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
+        else pendingInput.push(msg.text);
+        return;
+      }
+      if (msg?.type === "rit.host.close") {
+        try { ptyCon.postMessage({ type: "close" }); } catch { }
+        return;
+      }
+      if (msg?.type === "mirror.snapshot.request" && msg.reqId) {
+        try {
+          const dump = serialize.serialize();
+          bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, data_b64: btoa(dump) });
+        } catch (e) {
+          bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, error: String(e) });
+        }
+        return;
+      }
+      if (msg?.type === "mirror.confirm.close") {
+        externalCloseConfirm = true;
+        return;
+      }
+      // set session name -> update tab title for easier identification
+      if (msg?.type === "rit.setName") {
+        const name = String(msg.name || "");
+        document.title = name ? ("Terminal - " + name) : "Terminal";
+        return;
+      }
+    });
+  }
+
+
+  function announceReady() {
+    if (!bgPort) return;
+
+    try {
+      bgPort.postMessage({ type: "rit.view.ready" });
+    } catch { }
+  }
+
+  function connectBg() {
+    if (reconnectTimer) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = 0;
+    }
+
+    const p = chrome.runtime.connect({ name: "rit-terminal" });
+    bgPort = p;
+    p.onDisconnect.addListener(() => {
+      bgPort = null;
+      reconnectTimer = setTimeout(() => { connectBg(); }, reconnectDelayMs);
+    });
+    attachBgPortOnMessage(p);
+    announceReady();
+  }
+  connectBg();
 
   const serialize = new D();
   term.loadAddon(serialize);
@@ -240,7 +308,7 @@ if (isMirror) {
   const pendingInput = [];
   let readyFlushTimer = null;
   const tabId = await chrome.tabs.getCurrent();
-  const ptySessionName = tabId.id? `tab${tabId.id}` : Date.now().toString();
+  const ptySessionName = tabId.id ? `tab${tabId.id}` : Date.now().toString();
 
   let warnOnClose = false;
   let userInteracted = false;
@@ -268,7 +336,7 @@ if (isMirror) {
     if (!ptyOpened) return;
     ptyOpened = false;
     console.log(`Closing session ${ptySessionName}`);
-    term.writeln(`[closing connection to native host session ${ptySessionName}]`);
+    term.writeln(`[closing native host session ${ptySessionName}]`);
     ptyCon.postMessage({
       type: "close"
     });
@@ -328,45 +396,6 @@ if (isMirror) {
     bgPort.postMessage({ type: "mirror.state", state: "error", message: err });
   });
 
-  // receive injections and mirror stdin
-  bgPort.onMessage.addListener((msg) => {
-    if (msg?.type === "rit.inject" && typeof msg.text === "string") {
-      openPty();
-      if (ptyReady) ptyCon.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
-      else pendingInput.push(msg.text);
-      return;
-    }
-    if (msg?.type === "mirror.stdin" && typeof msg.text === "string") {
-      openPty();
-      if (ptyReady) ptyCon.postMessage({ type: "stdin", data_b64: btoa(msg.text) });
-      else pendingInput.push(msg.text);
-      return;
-    }
-    if (msg?.type === "rit.host.close") {
-      try { ptyCon.postMessage({ type: "close" }); } catch { }
-      return;
-    }
-    if (msg?.type === "mirror.snapshot.request" && msg.reqId) {
-      try {
-        const dump = serialize.serialize();
-        bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, data_b64: btoa(dump) });
-      } catch (e) {
-        bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, error: String(e) });
-      }
-      return;
-    }
-    if (msg?.type === "mirror.confirm.close") {
-      externalCloseConfirm = true;
-      return;
-    }
-    // set session name -> update tab title for easier identification
-    if (msg?.type === "rit.setName") {
-      const name = String(msg.name || "");
-      document.title = name ? ("Terminal - " + name) : "Terminal";
-      return;
-    }
-  });
-
   term.onData((data) => {
     ptyCon.postMessage({ type: "stdin", data_b64: btoa(data) });
   });
@@ -386,6 +415,12 @@ if (isMirror) {
     console.log("Closing connecting with host");
     closePty();
     try { ptyCon.disconnect(); } catch { }
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    try {
+      if (bgPort) {
+        bgPort.disconnect();
+      }
+    } catch { }
   });
 
   window.addEventListener("beforeunload", (e) => {

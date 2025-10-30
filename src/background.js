@@ -6,37 +6,22 @@
 
 import { DEFAULTS } from "./defaults.js";
 import { MENU_ID_DEFAULT, SESSION_KEY, TERM_URL, MENU_ID_PICK_PARENT, MENU_ID_PICK_PREFIX } from "./constants.js"
+import { storedSet, storedMap } from "./util.js"
 
-// Terminal tab ports -> tabId -> Port ("rit-terminal")
+
+// Ephemeral:
 const termPorts = new Map();
-// Terminal tab readiness -> tabIds that sent rit.view.ready
-const termReady = new Set();
-// Waiters -> await port and view readiness per tab
-const termWaiters = new Map(); // tabId -> resolve[]
-const viewWaiters = new Map(); // tabId -> resolve[]
-// Mirror iframe ports -> Set<Port> ("rit-mirror")
 const mirrorPorts = new Set();
-// Mirror selection -> which tabId a given mirror iframe is following
-const mirrorSelection = new Map(); // Port -> tabId
-// Snapshot waiters -> reqId -> mirror Port
+const mirrorSelection = new Map();
+const termWaiters = new Map();
+const viewWaiters = new Map();
 const snapshotWaiters = new Map();
+// const mirrorsByTab = new Map();
 
-// stored in chrome.storage.local as { sessionNames: { [tabId]: string } }
-async function getNameMap() {
-  const got = await chrome.storage.local.get("sessionNames");
-  return got.sessionNames || {};
-}
-async function setName(tabId, name) {
-  const map = await getNameMap();
-  if (name && name.trim()) map[String(tabId)] = name.trim();
-  else delete map[String(tabId)];
-  await chrome.storage.local.set({ sessionNames: map });
-}
-async function removeName(tabId) {
-  const map = await getNameMap();
-  delete map[String(tabId)];
-  await chrome.storage.local.set({ sessionNames: map });
-}
+// Persistent:
+const termReady = await storedSet("rit.termReady");
+const sessionMeta = await storedMap("rit.sessionMeta");
+const sessionNames = await storedMap("rit.sessionNames");
 
 async function getSettings() {
   const got = await chrome.storage.sync.get(DEFAULTS);
@@ -155,13 +140,12 @@ async function forwardToTerminalTab(message, preferredTabId = null) {
 // list sessions -> include saved names
 async function listSessions() {
   const tabs = await chrome.tabs.query({ url: TERM_URL });
-  const names = await getNameMap();
   return tabs.map(t => ({
     tabId: t.id,
     windowId: t.windowId,
     title: t.title || "Terminal",
     active: Boolean(t.active),
-    name: names[String(t.id)] || ""
+    name: sessionNames.get(t.id) || ""
   }));
 }
 
@@ -222,6 +206,10 @@ chrome.runtime.onConnect.addListener((port) => {
     port.onMessage.addListener((msg) => {
       if (!msg) return;
 
+      // if (!termPorts.has(tabId) && termReady.has(tabId)) {
+      //   termPorts.set(tabId, port);
+      // }
+
       if (msg.type === "rit.view.ready") {
         termReady.add(tabId);
         resolveWaiters(viewWaiters, tabId, true);
@@ -248,8 +236,8 @@ chrome.runtime.onConnect.addListener((port) => {
     port.onDisconnect.addListener(() => {
       termPorts.delete(tabId);
       termReady.delete(tabId);
-      // remove name when tab closes
-      removeName(tabId).then(() => broadcastSessionsUpdate());
+      sessionNames.delete(tabId);
+      broadcastSessionsUpdate();
     });
 
     return;
@@ -290,7 +278,11 @@ chrome.runtime.onConnect.addListener((port) => {
         if (targetId && !termPorts.get(targetId)) {
           const ok = await waitForPort(targetId, 2000);
           if (!ok) {
-            try { port.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, error: "terminal not ready" }); } catch { }
+            try {
+              port.postMessage({
+                type: "mirror.snapshot", reqId: msg.reqId, error: `terminal not ready (${msg.tabId} not in ${[...termPorts.keys()]})`
+              });
+            } catch { }
             return;
           }
         }
@@ -445,7 +437,7 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
     (async () => {
       const tabId = msg.tabId;
       const name = String(msg.name || "");
-      await setName(tabId, name);
+      sessionNames.set(tabId, name);
       // tell the terminal page to update its title
       const p = termPorts.get(tabId);
       if (p) {
@@ -513,8 +505,24 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
   }
 });
 
+async function reconcileSessions() {
+  try {
+    const urlPrefix = chrome.runtime.getURL("pages/terminal.html");
+    const tabs = await chrome.tabs.query({ url: `${urlPrefix}*` });
+    const alive = new Set(tabs.map(t => t.id));
+
+    for (const id of termReady) if (!alive.has(id)) termReady.delete(id);
+    for (const [id] of sessionMeta) if (!alive.has(id)) sessionMeta.delete(id);
+    for (const [id] of sessionNames) if (!alive.has(id)) sessionNames.delete(id);
+  } catch { }
+}
+reconcileSessions();
+
 // cleanup name when tab is closed directly
 chrome.tabs.onRemoved.addListener((tabId) => {
-  removeName(tabId).then(() => broadcastSessionsUpdate());
+  sessionNames.delete(tabId);
+  sessionMeta.delete(tabId);
+  termReady.delete(tabId);
+  broadcastSessionsUpdate();
 });
 
