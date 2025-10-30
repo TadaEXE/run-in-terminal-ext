@@ -12,7 +12,7 @@ const term = new Terminal({
   fontSize: 13,
   cursorBlink: true,
   theme: { background: "#111111" },
-  scrollback: 5000
+  scrollback: 5000,
 });
 const fit = new FitAddon();
 term.loadAddon(fit);
@@ -59,15 +59,13 @@ if (isMirror) {
       return;
     }
 
-    if (data.type)
-
-      if (data.type === "rit.clear") {
-        selectedTabId = null;
-        term.reset();
-        fit.fit();
-        lastReqId = null;
-        return;
-      }
+    if (data.type === "rit.clear") {
+      selectedTabId = null;
+      term.reset();
+      fit.fit();
+      lastReqId = null;
+      return;
+    }
   });
 
   mirrorPort.onMessage.addListener((msg) => {

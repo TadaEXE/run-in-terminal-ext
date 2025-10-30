@@ -53,12 +53,37 @@ async function ensureDefaults() {
 function pingHost() {
   const host = HOST_NAME;
   let port;
-  try { port = chrome.runtime.connectNative(host); } catch (e) { alert("Native host connect failed.\n\n" + e); return; }
+  try {
+    port = chrome.runtime.connectNative(host);
+  } catch (e) {
+    alert("Native host connect failed.\n\n" + e); return;
+  }
+
   let done = false;
-  const t = setTimeout(() => { if (done) return; done = true; try { port.disconnect(); } catch { }; alert("Ping timeout."); }, 3000);
-  port.onMessage.addListener((msg) => { if (done) return; done = true; clearTimeout(t); try { port.disconnect(); } catch { }; alert(msg && msg.type === "pong" ? "Host connected: Received pong." : "Host responded."); });
-  port.onDisconnect.addListener(() => { if (done) return; done = true; clearTimeout(t); const err = chrome.runtime.lastError?.message || "Disconnected."; alert("Host disconnect: " + err); });
-  try { port.postMessage({ type: "ping" }); } catch (e) { clearTimeout(t); alert("Ping send failed.\n\n" + e); }
+  const t = setTimeout(() => {
+    if (done) return; done = true;
+    try {
+      port.disconnect();
+    } catch { };
+
+    alert("Ping timeout.");
+  }, 3000);
+  port.onMessage.addListener((msg) => {
+    if (done) return; done = true; clearTimeout(t); try {
+      port.disconnect();
+    } catch { };
+
+    alert(msg && msg.type === "pong" ? "Host connected: Received pong." : "Host responded.");
+  });
+  port.onDisconnect.addListener(() => {
+    if (done) return; done = true; clearTimeout(t); const err = chrome.runtime.lastError?.message || "Disconnected."; alert("Host disconnect: " + err);
+  });
+  try {
+    port.postMessage({ type: "ping" });
+  } catch (e) {
+    clearTimeout(t);
+    alert("Ping send failed.\n\n" + e);
+  }
 }
 
 await ensureDefaults();

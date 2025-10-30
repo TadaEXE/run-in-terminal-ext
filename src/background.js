@@ -16,11 +16,9 @@ const mirrorSelection = new Map();
 const termWaiters = new Map();
 const viewWaiters = new Map();
 const snapshotWaiters = new Map();
-// const mirrorsByTab = new Map();
 
 // Persistent:
 const termReady = await storedSet("rit.termReady");
-const sessionMeta = await storedMap("rit.sessionMeta");
 const sessionNames = await storedMap("rit.sessionNames");
 
 async function getSettings() {
@@ -512,7 +510,6 @@ async function reconcileSessions() {
     const alive = new Set(tabs.map(t => t.id));
 
     for (const id of termReady) if (!alive.has(id)) termReady.delete(id);
-    for (const [id] of sessionMeta) if (!alive.has(id)) sessionMeta.delete(id);
     for (const [id] of sessionNames) if (!alive.has(id)) sessionNames.delete(id);
   } catch { }
 }
@@ -521,7 +518,6 @@ reconcileSessions();
 // cleanup name when tab is closed directly
 chrome.tabs.onRemoved.addListener((tabId) => {
   sessionNames.delete(tabId);
-  sessionMeta.delete(tabId);
   termReady.delete(tabId);
   broadcastSessionsUpdate();
 });

@@ -128,7 +128,8 @@ const term = new wl({
   fontSize: 13,
   cursorBlink: true,
   theme: { background: "#111111" },
-  scrollback: 5000
+  scrollback: 5000,
+  windowOptions: { getCellSizePixels: true }
 });
 const fit = new o();
 term.loadAddon(fit);
@@ -175,15 +176,13 @@ if (isMirror) {
       return;
     }
 
-    if (data.type)
-
-      if (data.type === "rit.clear") {
-        selectedTabId = null;
-        term.reset();
-        fit.fit();
-        lastReqId = null;
-        return;
-      }
+    if (data.type === "rit.clear") {
+      selectedTabId = null;
+      term.reset();
+      // fit.fit();
+      lastReqId = null;
+      return;
+    }
   });
 
   mirrorPort.onMessage.addListener((msg) => {
@@ -224,7 +223,7 @@ if (isMirror) {
     mirrorPort.postMessage({ type: "mirror.stdin", data });
   });
 
-  new ResizeObserver(() => { fit.fit(); }).observe(root);
+  // new ResizeObserver(() => { fit.fit(); }).observe(root);
 
 } else { // Normal terminal tab
 
