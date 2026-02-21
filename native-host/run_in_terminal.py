@@ -1,3 +1,6 @@
+# pyright: reportExplicitAny=false
+# pyright: reportAny=false
+
 import base64
 from datetime import datetime
 import json
@@ -11,7 +14,6 @@ from dataclasses import dataclass, asdict
 from multiprocessing.connection import Connection, Listener, Client
 from pathlib import Path
 from typing import Literal, Optional, Dict, Any, Set
-
 
 IS_WIN = sys.platform == "win32"
 ENABLE_LOGGING: Literal["file"] | Literal["print"] | Literal["off"] = "file"
@@ -252,6 +254,9 @@ def send_to_ext(obj: Dict[str, Any]) -> None:
     """
     Sends one Native Messaging JSON message to stdout.
     """
+    log(f"NAT: {obj}")
+    if obj.__contains__("data_b64"):
+        log(f"NAT: {base64.b64decode(obj["data_b64"])}")
     b = json.dumps(obj, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     sys.stdout.buffer.write(len(b).to_bytes(4, "little"))
     sys.stdout.buffer.write(b)
@@ -419,13 +424,26 @@ class PTYShell:
             termios.TIOCSWINSZ,
             st.pack("HHHH", self.rows, self.cols, 0, 0),
         )
+        
+        def preexec():
+            if self.slave_fd is None:
+                log("Got no slave fd from openpty().")
+                return
+            os.setsid()
+            fcntl.ioctl(self.slave_fd, termios.TIOCSCTTY, 0)
+
+        env = os.environ.copy()
+        env.setdefault("TERM", "xterm-256color")
+        env.setdefault("COLORTERM", "truecolor")
+
         self.proc = subprocess.Popen(
             [self.shell, "-l"],
             stdin=self.slave_fd,
             stdout=self.slave_fd,
             stderr=self.slave_fd,
-            start_new_session=True,
+            preexec_fn=preexec,
             cwd=home_dir(),
+            env=env,
         )
         os.close(self.slave_fd)
         return "posix-pty"
@@ -801,6 +819,7 @@ def host_main() -> None:
     try:
         while not received_close:
             msg = read_from_ext()
+            log(f"EXT: {msg}")
             if msg is None:
                 if client:
                     try:

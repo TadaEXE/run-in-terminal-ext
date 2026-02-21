@@ -194,7 +194,7 @@ if (isMirror) {
     if (!msg) return;
 
     if (msg.type === "mirror.snapshot" && msg.reqId) {
-      // if (msg.reqId !== lastReqId) return;
+      if (msg.reqId !== lastReqId) return;
       if (msg.error) {
         term.writeln("[snapshot error] " + String(msg.error));
       } else if (msg.data_b64) {
@@ -209,16 +209,9 @@ if (isMirror) {
     }
 
     if (msg.type === "mirror.state") {
-      if (msg.state === "ready") {
-        term.writeln("[mirroring terminal]");
-        requestSnapshot();
-      }
-      else if (msg.state === "exit") {
-        term.writeln("\r\n[process exited]");
-      }
-      else if (msg.state === "error") {
-        term.writeln("\r\n[host error] " + String(msg.message || "unknown"));
-      }
+      if (msg.state === "ready") term.writeln("[mirroring terminal]");
+      else if (msg.state === "exit") term.writeln("\r\n[process exited]");
+      else if (msg.state === "error") term.writeln("\r\n[host error] " + String(msg.message || "unknown"));
       return;
     }
 

@@ -1,7 +1,7 @@
 {
   "name": "com.tada.run_in_terminal",
   "description": "Run in Terminal native host",
-  "path": "/home/tada/.local/share/run-in-terminal/native-host/run.sh",
+  "path": "/home/tada/p/run-in-terminal-ext/native-host/run.sh",
   "type": "stdio",
   "allowed_extensions": [
     "run-in-terminal@tada.com"
