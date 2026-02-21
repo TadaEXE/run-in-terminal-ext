@@ -6,16 +6,34 @@ import "@xterm/xterm/css/xterm.css";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SerializeAddon } from "@xterm/addon-serialize";
+import { Unicode11Addon } from "@xterm/addon-unicode11";
+import { UnicodeGraphemesAddon } from "@xterm/addon-unicode-graphemes";
 import { HOST_NAME, DEFAULTS } from "./defaults.js";
+import { b64ToUtf8 } from "./util.js";
 
 const term = new Terminal({
   fontSize: 13,
+  fontFamily: `
+  "JetBrainsMono Nerd Font Mono",
+  "FiraCode Nerd Font Mono",
+  "Hack Nerd Font Mono",
+  monospace
+`,
   cursorBlink: true,
   theme: { background: "#111111" },
   scrollback: 5000,
+  allowProposedApi: true,
 });
+const unicode11Addon = new Unicode11Addon();
 const fit = new FitAddon();
+const unicodeGraphemes = new UnicodeGraphemesAddon();
+
+term.loadAddon(unicode11Addon);
 term.loadAddon(fit);
+term.loadAddon(unicodeGraphemes);
+
+term.unicode.activeVersion = '11';
+term.unicode.activeVersion = '15-graphemes';
 
 const root = document.getElementById("term");
 term.open(root);
@@ -82,13 +100,13 @@ if (isMirror) {
       if (msg.error) {
         term.writeln("[snapshot error] " + String(msg.error));
       } else if (msg.data_b64) {
-        try { term.write(atob(msg.data_b64)); } catch (e) { term.writeln("[snapshot decode error] " + String(e)); }
+        try { term.write(b64ToUtf8(msg.data_b64)); } catch (e) { term.writeln("[snapshot decode error] " + String(e)); }
       }
       return;
     }
 
     if (msg.type === "mirror.data" && msg.data_b64) {
-      try { term.write(atob(msg.data_b64)); } catch { }
+      try { term.write(b64ToUtf8(msg.data_b64)); } catch { }
       return;
     }
 
@@ -250,7 +268,7 @@ if (isMirror) {
 
   ptyCon.onMessage.addListener((msg) => {
     if (msg?.type === "data" && msg.data_b64) {
-      term.write(atob(msg.data_b64));
+      term.write(b64ToUtf8(msg.data_b64));
       bgPort.postMessage({ type: "mirror.data", data_b64: msg.data_b64 });
       return;
     }

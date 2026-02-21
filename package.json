@@ -1,28 +1,22 @@
 {
   "name": "run-in-terminal",
   "version": "0.2.0",
-  
   "scripts": {
     "build": "rollup -c",
     "build:watch": "rollup -c -w",
-
     "dist:clean:firefox": "rimraf dist/firefox && shx mkdir -p dist/firefox/run-in-terminal",
     "dist:clean:chrome": "rimraf dist/chrome && shx mkdir -p dist/chrome/run-in-terminal",
     "dist:clean:native": "rimraf dist/native-host && shx mkdir -p dist/native-host/rit-native-host",
-
     "dist:copy:firefox": "shx mkdir -p dist/firefox/run-in-terminal && cpy \"src\" \"pages\" \"icons\" \"README.md\" \"package.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/firefox/run-in-terminal --parents && cpy manifest-firefox.json dist/firefox/run-in-terminal --rename=manifest.json",
     "dist:copy:chrome": "shx mkdir -p dist/chrome/run-in-terminal && cpy \"src\" \"pages\" \"icons\" \"README.md\" \"package.json\" \"!**/*.map\" \"!**/*.entry.*\" dist/firefox/run-in-terminal --parents && cpy manifest-chrome.json dist/chrome/run-in-terminal --rename=manifest.json",
     "dist:copy:native": "cpy \"native-host\" dist/native-host/rit-native-host --parents",
-
     "pack:chrome": "node scripts/pack.js dist/chrome/run-in-terminal",
     "pack:firefox": "node scripts/pack.js dist/firefox/run-in-terminal",
     "pack:native": "node scripts/pack.js dist/native-host/rit-native-host",
-
     "release:firefox": "npm run dist:clean:firefox && npm run build && npm run dist:copy:firefox && npm run pack:firefox",
     "release:chrome": "npm run dist:clean:chrome && npm run build && npm run dist:copy:chrome && npm run pack:chrome",
     "release:native": "npm run dist:clean:native && npm run dist:copy:native && npm run pack:native",
     "release:all": "npm run release:firefox && npm run release:chrome && npm run release:native",
-
     "sign:firefox": "node scripts/sign-firefox.js listed",
     "sign:firefox:unlisted": "node scripts/sign-firefox.js unlisted",
     "sign:chrome": "node scripts/sign-chrome.js"
@@ -42,12 +36,18 @@
     "rollup": "^4.52.3",
     "rollup-plugin-postcss": "^4.0.2",
     "shx": "^0.4.0",
-    "web-ext": "^8.2.0",
+    "web-ext": "^9.3.0",
     "webextension-polyfill": "^0.12.0"
   },
   "dependencies": {
+    "@xterm/addon-clipboard": "^0.2.0",
     "@xterm/addon-fit": "^0.11.0-beta.129",
     "@xterm/addon-serialize": "^0.14.0-beta.129",
-    "@xterm/xterm": "^5.6.0-beta.129"
+    "@xterm/addon-unicode-graphemes": "^0.4.0",
+    "@xterm/addon-unicode11": "^0.9.0",
+    "@xterm/addon-web-fonts": "^0.1.0",
+    "@xterm/addon-web-links": "^0.12.0",
+    "@xterm/addon-webgl": "^0.19.0",
+    "@xterm/xterm": "^6.1.0-beta.86"
   }
 }

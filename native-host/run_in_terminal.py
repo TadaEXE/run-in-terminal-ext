@@ -254,9 +254,10 @@ def send_to_ext(obj: Dict[str, Any]) -> None:
     """
     Sends one Native Messaging JSON message to stdout.
     """
-    log(f"NAT: {obj}")
     if obj.__contains__("data_b64"):
         log(f"NAT: {base64.b64decode(obj["data_b64"])}")
+    else:
+        log(f"NAT: {obj}")
     b = json.dumps(obj, separators=(",", ":"), ensure_ascii=True).encode("utf-8")
     sys.stdout.buffer.write(len(b).to_bytes(4, "little"))
     sys.stdout.buffer.write(b)
