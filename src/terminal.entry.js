@@ -9,7 +9,7 @@ import { SerializeAddon } from "@xterm/addon-serialize";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { UnicodeGraphemesAddon } from "@xterm/addon-unicode-graphemes";
 import { HOST_NAME, DEFAULTS } from "./defaults.js";
-import { b64ToUtf8 } from "./util.js";
+import { b64ToUtf8, utf8ToB64 } from "./util.js";
 
 const term = new Terminal({
   fontSize: 13,
@@ -162,7 +162,7 @@ if (isMirror) {
       if (msg?.type === "mirror.snapshot.request" && msg.reqId) {
         try {
           const dump = serialize.serialize();
-          bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, data_b64: btoa(dump) });
+          bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, data_b64: utf8ToB64(`[${msg.reqId}] ${dump}`) });
         } catch (e) {
           bgPort.postMessage({ type: "mirror.snapshot", reqId: msg.reqId, error: String(e) });
         }

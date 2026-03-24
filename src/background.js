@@ -168,18 +168,28 @@ async function rebuildAllMenus() {
 
   if (sessions.length <= 1) {
     chrome.contextMenus.create({
-      id: MENU_ID_DEFAULT,
-      title: "Run in terminal",
-      contexts: ["selection"]
+      id: MENU_ID_DEFAULT + "-open",
+      title: "Open terminal",
+      contexts: [
+        "page",
+        "frame"
+      ]
     });
 
+    chrome.contextMenus.create({
+      id: MENU_ID_DEFAULT,
+      title: "Run in terminal",
+      contexts: [
+        "selection",
+      ]
+    });
     return;
   }
 
   chrome.contextMenus.create({
     id: MENU_ID_PICK_PARENT,
-    title: "Run in terminal",
-    contexts: ["selection"]
+    title: "Pick terminal",
+    contexts: ["selection", "page"]
   });
 
   for (const it of sessions) {
@@ -187,7 +197,7 @@ async function rebuildAllMenus() {
       id: MENU_ID_PICK_PREFIX + String(it.tabId),
       parentId: MENU_ID_PICK_PARENT,
       title: labelForSession(it),
-      contexts: ["selection"]
+      contexts: ["selection", "page"]
     });
   }
 }
@@ -316,6 +326,20 @@ async function injectSnippetToTerminal(text, activate) {
   return tabId;
 }
 
+
+async function handleDangerousSnippet(snippet) {
+  if (!snippet) return true;
+
+  const settings = await getSettings();
+  const dangerous = settings.confirmOnDanger ? findDangerousMatches(snippet, settings.dangerousSubstrings) : [];
+  if (dangerous.length) {
+    await setPending({ snippet, dangerous, when: Date.now() });
+    await chrome.tabs.create({ url: "pages/confirm.html", active: true });
+    return false;
+  }
+  return true;
+}
+
 // inject into specific session
 async function injectSnippetToSpecificTab(tabId, text, activate = true) {
   try { await chrome.tabs.get(tabId); } catch { return false; }
@@ -336,22 +360,15 @@ async function injectSnippetToSpecificTab(tabId, text, activate = true) {
 
 // context menu handler
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (!info.selectionText) return;
-
   // default single-session item
-  if (info.menuItemId === MENU_ID_DEFAULT) {
-    const settings = await getSettings();
-    const snippet = info.selectionText;
-    const dangerous = settings.confirmOnDanger ? findDangerousMatches(snippet, settings.dangerousSubstrings) : [];
-    if (dangerous.length) {
-      await setPending({ snippet, dangerous, when: Date.now() });
-      await chrome.tabs.create({ url: "pages/confirm.html", active: true });
-      return;
-    }
-    const tabId = await injectSnippetToTerminal(snippet + "\n", false);
+  if (info.menuItemId.startsWith(MENU_ID_DEFAULT) && handleDangerousSnippet(info.selectionText)) {
+    const tabId = await injectSnippetToTerminal(info.selectionText ? info.selectionText + "\n" : "", false);
+
     if (tab?.id) {
-      await openInlineMirror(tab.id, tabId);
+      // await openInlineMirror(tab.id, tabId);
+      await injectOverlay(tab.id, tabId);
     }
+
     return;
   }
 
@@ -360,22 +377,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     const tabId = Number(info.menuItemId.slice(MENU_ID_PICK_PREFIX.length));
     if (!Number.isFinite(tabId)) return;
 
-    const settings = await getSettings();
-    const snippet = info.selectionText;
-    const dangerous = settings.confirmOnDanger ? findDangerousMatches(snippet, settings.dangerousSubstrings) : [];
-
-    if (dangerous.length) {
-      await setPending({ snippet, dangerous, when: Date.now(), targetTabId: tabId });
-      await chrome.tabs.create({ url: "pages/confirm.html", active: true });
-      return;
+    if (handleDangerousSnippet(info.selectionText)) {
+      const ok = await injectSnippetToSpecificTab(tabId, info.selectionText + "\n", false);
+      if (!ok) console.warn("[RIT] specific-session inject failed for tab", tabId);
     }
 
     if (tab?.id) {
       await openInlineMirror(tab.id, tabId);
     }
 
-    const ok = await injectSnippetToSpecificTab(tabId, snippet + "\n", false);
-    if (!ok) console.warn("[RIT] specific-session inject failed for tab", tabId);
     return;
   }
 });
